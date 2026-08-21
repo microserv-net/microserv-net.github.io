@@ -28,7 +28,7 @@
 
   window.SpineTheme.init(cfg.site.theme);
 
-  const { slots, cards, tags, nodeEls, spineFill } = window.SpineRender.mount(cfg);
+  const { slots, cards, tags, spineCurve } = window.SpineRender.mount(cfg);
 
   const dotsWrap = document.getElementById("progress-dots");
 
@@ -67,9 +67,8 @@
       stage: document.getElementById("spine-stage"),
       cards,
       tags,
-      nodes: nodeEls,
       dots,
-      spineFill,
+      spineCurve,
       onChange: (activeIndex) => highlightNav(activeIndex),
     });
     highlightNav(0);

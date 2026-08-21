@@ -172,126 +172,129 @@ window.SpineRender = (function () {
     `;
   }
 
-  // Catmull-Rom -> cubic Bezier, so the curve threads smoothly through every
-  // sampled point instead of kinking at each one.
-  function catmullRomPath(pts) {
-    if (pts.length < 2) return "";
-    if (pts.length === 2) return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
-    let d = `M ${pts[0].x} ${pts[0].y} `;
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[i - 1] || pts[i];
-      const p1 = pts[i];
-      const p2 = pts[i + 1];
-      const p3 = pts[i + 2] || p2;
-      const c1x = p1.x + (p2.x - p0.x) / 6;
-      const c1y = p1.y + (p2.y - p0.y) / 6;
-      const c2x = p2.x - (p3.x - p1.x) / 6;
-      const c2y = p2.y - (p3.y - p1.y) / 6;
-      d += `C ${c1x} ${c1y} ${c2x} ${c2y} ${p2.x} ${p2.y} `;
-    }
-    return d.trim();
-  }
-
-  // ---- spine SVG: an alternating S-wave, held near the centreline -------
-  // The spine is not anchored to one side of the screen. Each node sits
-  // on the centreline (it's an inflection point), and the segment between
-  // one node and the next bows out left or right — alternating direction
-  // every segment, the way a curved line actually moves, not one single
-  // bulge for the whole page. The bulge amplitude scales with viewport
-  // width. Which side segment 0 bows toward is randomized per load.
+  // ---- spine SVG: ONE arc visible at a time, tied to the current scroll
+  // transition ---------------------------------------------------------
+  // Earlier versions drew the whole page's worth of curve at once, which
+  // meant it could visually cross behind a card. Instead: each transition
+  // between one vertebra and the next gets its own arc (a simple bow, left
+  // or right), all pre-built but only ONE shown at a time — whichever
+  // transition is currently under the scroll position. Moving to the next
+  // vertebra swaps in the mirrored arc on the opposite side. The engine
+  // calls setProgress(current) every frame so the visible arc traces in
+  // (or retraces out) exactly with scroll direction — see spine-engine.js.
   //
-  // Every vertebra's card sits on the *inner* side of the curve near it —
-  // the side the curve is NOT bowing toward — so cards and curve stay
-  // opposite one another the whole way down (see spine-engine.js, which
-  // reads slot.lean, set below).
+  // Every vertebra's card sits on the side OPPOSITE whichever way its
+  // neighbouring arc bows, so card and curve are never on the same side
+  // (slot.lean is set here, read by buildCards/buildTags below).
   function buildSpine(wrapEl, slots) {
     wrapEl.innerHTML = "";
     const NS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(NS, "svg");
     svg.setAttribute("preserveAspectRatio", "none");
 
-    const rail = document.createElementNS(NS, "path");
+    const rail = document.createElementNS(NS, "path"); // faint static centre guide
     rail.setAttribute("class", "spine-rail");
-    const fill = document.createElementNS(NS, "path");
-    fill.setAttribute("class", "spine-fill");
-
     svg.appendChild(rail);
-    svg.appendChild(fill);
 
-    const nodeEls = slots.map(() => {
-      const c = document.createElementNS(NS, "circle");
-      c.setAttribute("class", "spine-node");
-      c.setAttribute("r", "4.5");
-      svg.appendChild(c);
-      return c;
-    });
-
-    wrapEl.appendChild(svg);
-
-    const startPhase = Math.random() < 0.5 ? 1 : -1; // which way it bows first, per load
     const N = slots.length;
-    // the side segment i (between node i and node i+1) bows toward
+    const segCount = Math.max(0, N - 1);
+    const startPhase = Math.random() < 0.5 ? 1 : -1; // which way segment 0 bows, per load
+
+    // the side segment i (between vertebra i and vertebra i+1) bows toward
     function bowSide(i) {
       return (i % 2 === 0 ? 1 : -1) * startPhase;
     }
 
-    // assign each vertebra's card to the opposite side once, up front —
-    // it doesn't depend on viewport size so it doesn't need to live in
-    // layout() below
+    // assign each vertebra's card to the opposite side once, up front
     slots.forEach((slot, i) => {
-      slot.lean = -bowSide(i);
+      slot.lean = -bowSide(Math.min(i, Math.max(0, segCount - 1)));
     });
+
+    const segPaths = [];
+    for (let i = 0; i < segCount; i++) {
+      const p = document.createElementNS(NS, "path");
+      p.setAttribute("class", "spine-fill");
+      svg.appendChild(p);
+      segPaths.push(p);
+    }
+
+    const nodeTop = document.createElementNS(NS, "circle");
+    nodeTop.setAttribute("class", "spine-node");
+    nodeTop.setAttribute("r", "4.5");
+    const nodeBot = document.createElementNS(NS, "circle");
+    nodeBot.setAttribute("class", "spine-node");
+    nodeBot.setAttribute("r", "4.5");
+    svg.appendChild(nodeTop);
+    svg.appendChild(nodeBot);
+
+    wrapEl.appendChild(svg);
+
+    let segLens = [];
 
     function layout() {
       const w = window.innerWidth;
       const h = wrapEl.clientHeight || window.innerHeight;
       svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
       const cx = w / 2;
-
-      // Wider viewport -> a wider bow, capped well inside where the cards
-      // sit so the curve never visually collides with one.
-      const amplitude = Math.max(28, Math.min(90, w * 0.055));
-
       const yTop = h * BAND_TOP;
       const yBot = h * BAND_BOTTOM;
+      const midY = (yTop + yBot) / 2;
 
-      const nodeYs = slots.map((slot, i) => {
-        const frac = N > 1 ? i / (N - 1) : 0.5;
-        return yTop + (yBot - yTop) * frac;
+      rail.setAttribute("d", `M ${cx} 0 L ${cx} ${h}`);
+
+      // A clearly visible bow — this is the whole visual now, so it can
+      // be bold. Capped so it never runs the arc itself off-screen.
+      let amplitude = w * 0.2;
+      amplitude = Math.min(amplitude, 300);
+      amplitude = Math.min(amplitude, w / 2 - 56);
+      amplitude = Math.max(amplitude, 56);
+
+      segPaths.forEach((p, i) => {
+        const bow = bowSide(i);
+        const d = `M ${cx} ${yTop} Q ${cx + bow * amplitude} ${midY} ${cx} ${yBot}`;
+        p.setAttribute("d", d);
+        segLens[i] = p.getTotalLength();
+        p.style.strokeDasharray = String(segLens[i]);
       });
 
-      // fill points: node, bow-point, node, bow-point, ... — the bow
-      // points alternate sides, which is what makes catmull-rom read as
-      // an S-wave instead of one arc
-      const fillPts = [];
-      for (let i = 0; i < N; i++) {
-        fillPts.push({ x: cx, y: nodeYs[i] });
-        if (i < N - 1) {
-          fillPts.push({ x: cx + bowSide(i) * amplitude, y: (nodeYs[i] + nodeYs[i + 1]) / 2 });
-        }
-      }
-
-      const railPts = [
-        { x: cx, y: 0 },
-        { x: cx, y: yTop * 0.6 },
-        ...fillPts,
-        { x: cx, y: yBot + (h - yBot) * 0.4 },
-        { x: cx, y: h },
-      ];
-
-      rail.setAttribute("d", catmullRomPath(railPts));
-      fill.setAttribute("d", catmullRomPath(fillPts));
-
-      nodeEls.forEach((node, i) => {
-        node.setAttribute("cx", String(cx));
-        node.setAttribute("cy", String(nodeYs[i]));
-      });
+      nodeTop.setAttribute("cx", String(cx));
+      nodeTop.setAttribute("cy", String(yTop));
+      nodeBot.setAttribute("cx", String(cx));
+      nodeBot.setAttribute("cy", String(yBot));
     }
 
     layout();
     window.addEventListener("resize", layout);
 
-    return { fillEl: fill, nodeEls, relayout: layout };
+    // current: the fractional slot position (0..N-1) from the engine.
+    // segIndex = which transition we're in; frac = progress through it,
+    // 0 at the top vertebra, 1 at the bottom one — scrolling back up
+    // simply drives frac back down, so the same arc un-traces.
+    function setProgress(current) {
+      if (segCount === 0) {
+        nodeTop.style.opacity = "0";
+        nodeBot.style.opacity = "0";
+        return;
+      }
+      const segIndex = Math.max(0, Math.min(segCount - 1, Math.floor(current)));
+      const frac = Math.max(0, Math.min(1, current - segIndex));
+
+      segPaths.forEach((p, i) => {
+        if (i === segIndex) {
+          p.style.opacity = "1";
+          const len = segLens[i] || 0;
+          p.style.strokeDashoffset = String(len * (1 - frac));
+        } else {
+          p.style.opacity = "0";
+        }
+      });
+      nodeTop.style.opacity = "1";
+      nodeBot.style.opacity = "1";
+    }
+
+    setProgress(0);
+
+    return { setProgress };
   }
 
   // ---- vertebra tags (opposite side from that vertebra's card) ----------
@@ -347,11 +350,11 @@ window.SpineRender = (function () {
     // buildSpine assigns slot.lean as a side effect (the curve is the
     // source of truth for which side each card belongs on) — it has to
     // run before buildCards/buildTags consume that value.
-    const { fillEl, nodeEls } = buildSpine(document.querySelector(".spine-line-wrap"), slots);
+    const spineCurve = buildSpine(document.querySelector(".spine-line-wrap"), slots);
     const cards = buildCards(document.getElementById("spine-carousel"), slots);
     const tags = buildTags(document.getElementById("vertebra-tags"), slots);
 
-    return { slots, cards, tags, nodeEls, spineFill: fillEl };
+    return { slots, cards, tags, spineCurve };
   }
 
   return { mount, buildDots, esc };

@@ -274,13 +274,12 @@ body.no-hijack #spine-stage{
 .spine-fill{
   stroke:var(--accent); stroke-width:2.5; fill:none;
   stroke-linecap:round; filter:drop-shadow(0 0 6px var(--signal));
+  opacity:0; transition:opacity .3s ease;
 }
 .spine-node{
-  fill:var(--bg); stroke:var(--accent); stroke-width:2;
-  transition:r .3s var(--ease-spine), fill .3s ease;
+  fill:var(--accent); stroke:var(--void); stroke-width:2;
+  opacity:0; transition:opacity .3s ease;
 }
-.spine-node.active{ fill:var(--accent); }
-
 /* The curve now stays close to the centreline (it bows at most ~90px
    either way — see AMPLITUDE in render.js), and each card sits opposite
    whichever way the curve bows near it. The tag sits on the SAME side as

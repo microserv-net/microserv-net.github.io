@@ -23,6 +23,11 @@
    that projection (elements pushed toward the camera end up displaced
    far more than the raw pixel value suggests). Doing the lean as `left`
    sidesteps that entirely and keeps the offset exactly what it says.
+
+   The spine curve itself is driven the same way: every frame,
+   spineCurve.setProgress(current) (see render.js) shows exactly one arc —
+   the one for whichever transition "current" is inside — and traces or
+   un-traces it in lockstep with scroll direction.
    ----------------------------------------------------------------------- */
 window.SpineEngine = (function () {
   function create(opts) {
@@ -30,9 +35,8 @@ window.SpineEngine = (function () {
       stage, // container that owns the wheel/touch listeners
       cards, // array of card elements, in slot order
       tags, // array of vertebra-tag elements, in slot order
-      nodes, // array of spine-node <circle> elements, in slot order
       dots, // array of progress-dot <button> elements, in slot order
-      spineFill, // the SVG path element that "traces" downward
+      spineCurve, // { setProgress(current) } — see render.js buildSpine()
       onChange, // (activeIndex, fraction) => void
     } = opts;
 
@@ -42,7 +46,6 @@ window.SpineEngine = (function () {
     let target = 0;
     let current = 0;
     let radius = 620;
-    let spineLength = 0;
     let raf = null;
 
     function computeRadius() {
@@ -67,15 +70,6 @@ window.SpineEngine = (function () {
       });
     }
     computeRadius();
-
-    function computeSpineLength() {
-      spineLength = spineFill ? spineFill.getTotalLength() : 0;
-      if (spineFill) {
-        spineFill.style.strokeDasharray = String(spineLength);
-        spineFill.style.strokeDashoffset = String(spineLength);
-      }
-    }
-    computeSpineLength();
 
     function clamp(v) {
       return Math.max(0, Math.min(N - 1, v));
@@ -136,7 +130,6 @@ window.SpineEngine = (function () {
     stage.addEventListener("touchend", onTouchEnd, { passive: true });
     window.addEventListener("keydown", onKey);
     window.addEventListener("resize", computeRadius);
-    window.addEventListener("resize", computeSpineLength);
 
     // ---- render loop ----
     let lastActive = -1;
@@ -173,7 +166,6 @@ window.SpineEngine = (function () {
         for (let i = 0; i < N; i++) {
           const isActive = i === activeIndex;
           if (tags[i]) tags[i].classList.toggle("show", isActive);
-          if (nodes[i]) nodes[i].classList.toggle("active", isActive);
           if (dots[i]) dots[i].classList.toggle("active", isActive);
           cards[i].setAttribute("aria-hidden", isActive ? "false" : "true");
           cards[i].toggleAttribute("inert", !isActive);
@@ -181,10 +173,7 @@ window.SpineEngine = (function () {
         onChange && onChange(activeIndex, N > 1 ? current / (N - 1) : 0);
       }
 
-      if (spineFill && spineLength) {
-        const frac = N > 1 ? current / (N - 1) : 0;
-        spineFill.style.strokeDashoffset = String(spineLength * (1 - frac));
-      }
+      spineCurve && spineCurve.setProgress(current);
 
       raf = requestAnimationFrame(frame);
     }
@@ -211,7 +200,6 @@ window.SpineEngine = (function () {
         stage.removeEventListener("touchend", onTouchEnd);
         window.removeEventListener("keydown", onKey);
         window.removeEventListener("resize", computeRadius);
-        window.removeEventListener("resize", computeSpineLength);
       },
     };
   }
