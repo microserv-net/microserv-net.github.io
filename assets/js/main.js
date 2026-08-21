@@ -6,9 +6,9 @@
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (prefersReducedMotion) body.classList.add("no-hijack");
 
-  const loaderTextEl = document.getElementById("loader-text");
-  const loaderPromise = loaderTextEl
-    ? window.SpineLoader.run(loaderTextEl)
+  const loaderRoot = document.getElementById("loader-curve");
+  const loaderPromise = loaderRoot
+    ? window.SpineLoader.run()
     : new Promise((r) => setTimeout(r, 1200));
 
   let cfg;

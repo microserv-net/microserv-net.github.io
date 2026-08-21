@@ -44,7 +44,7 @@
 
   --topbar-h:76px;
   --radius:620px;
-  --card-w:min(440px, 76vw);
+  --card-w:min(500px, 78vw);
   --ease-spine:cubic-bezier(.16,.84,.32,1);
   color-scheme: dark;
 }
@@ -93,66 +93,40 @@ p{ margin:0; }
 }
 
 /* ==========================================================================
-   0. WEIRD LOADER
+   0. LOADER — a miniature of the site's own C-curve, drawing itself
    ========================================================================== */
 #loader{
   position:fixed; inset:0; z-index:9999;
   background:var(--void);
   display:flex; align-items:center; justify-content:center;
-  transition:opacity .9s var(--ease-spine), visibility .9s;
+  transition:opacity .8s var(--ease-spine), visibility .8s;
 }
 #loader.done{ opacity:0; visibility:hidden; pointer-events:none; }
 
 .loader-inner{
-  display:flex; flex-direction:column; align-items:center; gap:22px;
-  width:min(420px, 82vw);
+  display:flex; flex-direction:column; align-items:center; gap:18px;
 }
-.loader-rig{ position:relative; width:64px; height:220px; }
-.loader-rig svg{ width:100%; height:100%; overflow:visible; }
-.vert{
-  transform-origin:center;
-  opacity:0;
-  animation:vertPop .5s var(--ease-spine) forwards;
+.loader-curve-wrap{ width:min(200px, 46vw); height:min(300px, 56vh); }
+.loader-curve-wrap svg{ width:100%; height:100%; overflow:visible; }
+.lc-rail{ fill:none; stroke:var(--line); stroke-width:2; }
+.lc-trace{
+  fill:none; stroke:var(--signal); stroke-width:2.5; stroke-linecap:round;
+  filter:drop-shadow(0 0 6px var(--signal));
 }
-@keyframes vertPop{
-  0%{ opacity:0; transform:scale(.2) translateY(-14px); }
-  60%{ opacity:1; transform:scale(1.12) translateY(2px); }
-  100%{ opacity:1; transform:scale(1) translateY(0); }
+.lc-node{
+  fill:var(--void); stroke:var(--signal-2); stroke-width:2;
+  opacity:0; transform:scale(.3); transform-box:fill-box; transform-origin:center;
+  transition:opacity .35s ease, transform .35s var(--ease-spine), fill .35s ease, stroke .35s ease;
 }
-.loader-pulse{
-  position:absolute; left:50%; top:0;
-  width:7px; height:7px; margin-left:-3.5px;
-  border-radius:50%;
-  background:var(--signal);
-  box-shadow:0 0 16px 3px var(--signal);
-  animation:pulseTravel 2.1s var(--ease-spine) infinite;
-  animation-delay:1.4s;
+.lc-node.show{
+  opacity:1; transform:scale(1); fill:var(--signal); stroke:var(--signal);
 }
-@keyframes pulseTravel{
-  0%{ top:2%; opacity:0; }
-  8%{ opacity:1; }
-  92%{ opacity:1; }
-  100%{ top:96%; opacity:0; }
+.loader-readout{
+  display:flex; align-items:baseline; gap:12px;
+  font-family:var(--font-mono); letter-spacing:.08em; text-transform:uppercase;
 }
-.loader-text{
-  font-family:var(--font-mono);
-  font-size:12.5px;
-  letter-spacing:.06em;
-  color:var(--bone-dim);
-  text-align:center;
-  min-height:2.6em;
-}
-.loader-text .cursor{ display:inline-block; width:.55em; color:var(--signal); animation:blink 1s steps(2) infinite; }
-@keyframes blink{ 50%{ opacity:0; } }
-.loader-bar{
-  width:100%; height:2px; background:var(--line); position:relative; overflow:hidden; border-radius:2px;
-}
-.loader-bar > span{
-  position:absolute; inset:0 100% 0 0;
-  background:linear-gradient(90deg, var(--signal-2), var(--signal));
-  animation:loaderFill 4.6s var(--ease-spine) forwards;
-}
-@keyframes loaderFill{ to{ right:0; } }
+.lr-label{ font-size:11.5px; color:var(--fg-dim); }
+.lr-pct{ font-size:15px; color:var(--signal); min-width:3.4ch; text-align:right; }
 
 /* ==========================================================================
    1. TOP BAR
@@ -188,50 +162,51 @@ body.loading #topbar{ animation:none; transform:translateY(-100%); }
 .brand-word{ font-family:var(--font-mono); font-size:15px; letter-spacing:.02em; }
 .brand-word b{ color:var(--signal); font-weight:600; }
 
-nav#primary-nav{ display:flex; align-items:center; gap:6px; }
-.nav-link{
+nav#primary-nav{
   position:relative;
-  padding:9px 16px;
+  display:flex; align-items:center; gap:2px;
+  padding:4px;
+  background:var(--bg-elevated);
+  border:1px solid var(--border);
+  border-radius:100px;
+}
+/* a thin horizontal connector behind the tabs — a tiny spine lying on
+   its side, with each nav item sitting on it like a vertebra */
+nav#primary-nav::before{
+  content:"";
+  position:absolute; left:16px; right:16px; top:50%;
+  height:1px; background:var(--border);
+  z-index:0;
+}
+.nav-link{
+  position:relative; z-index:1;
+  padding:9px 15px;
   font-family:var(--font-mono);
-  font-size:12.5px;
+  font-size:12px;
   letter-spacing:.05em;
   text-transform:uppercase;
   color:var(--fg-dim);
   border-radius:100px;
-  overflow:visible;
-  transition:color .3s ease;
+  transition:color .3s ease, transform .3s var(--ease-spine);
 }
-.nav-link svg.nerve{
-  position:absolute; left:8%; right:8%; bottom:2px; height:10px;
-  overflow:visible; pointer-events:none;
-}
-.nav-link svg.nerve path{
-  fill:none; stroke:var(--accent); stroke-width:1.4;
-  stroke-dasharray:1 6; stroke-linecap:round;
-  opacity:0;
-  transition:opacity .25s ease;
-}
-.nav-link .pulse-dot{
-  position:absolute; left:8%; bottom:1px;
+/* the joint marker above each tab */
+.nav-link::after{
+  content:"";
+  position:absolute; left:50%; top:-2px;
   width:5px; height:5px; border-radius:50%;
-  background:var(--signal); box-shadow:0 0 8px var(--signal);
-  opacity:0; transition:opacity .2s ease;
+  background:var(--border);
+  transform:translateX(-50%);
+  transition:background .3s ease, box-shadow .3s ease;
 }
-.nav-link:hover{ color:var(--fg); }
-.nav-link:hover svg.nerve path{ opacity:.9; animation:nerveDash 1s linear infinite; }
-.nav-link:hover .pulse-dot{ opacity:1; animation:dotTravel 1.1s ease-in-out infinite; }
-@keyframes nerveDash{ to{ stroke-dashoffset:-14; } }
-@keyframes dotTravel{
-  0%{ left:8%; }
-  50%{ left:84%; }
-  100%{ left:8%; }
-}
+.nav-link:hover{ color:var(--fg); transform:translateY(-2px); }
+.nav-link:hover::after{ background:var(--accent); box-shadow:0 0 8px var(--signal); }
 
-.nav-link.active{ color:var(--fg); }
-.nav-link.active::after{
+.nav-link.active{ color:var(--void); }
+.nav-link.active::before{
   content:""; position:absolute; inset:0; border-radius:100px;
-  background:var(--bg-elevated); border:1px solid var(--border); z-index:-1;
+  background:var(--accent); z-index:-1;
 }
+.nav-link.active::after{ background:var(--void); }
 
 .topbar-controls{ display:flex; align-items:center; gap:14px; }
 
@@ -285,11 +260,10 @@ body.no-hijack #spine-stage{
 
 .spine-line-wrap{
   position:fixed; inset:0; z-index:5; pointer-events:none;
-  display:flex; justify-content:center;
   -webkit-mask-image:linear-gradient(to bottom, transparent 0, transparent 20%, black 26%, black 74%, transparent 80%, transparent 100%);
   mask-image:linear-gradient(to bottom, transparent 0, transparent 20%, black 26%, black 74%, transparent 80%, transparent 100%);
 }
-.spine-line-wrap svg{ height:100%; width:200px; overflow:visible; }
+.spine-line-wrap svg{ display:block; height:100%; width:100%; overflow:visible; }
 .spine-rail{ stroke:var(--border); stroke-width:2; fill:none; }
 .spine-fill{
   stroke:var(--accent); stroke-width:2.5; fill:none;
@@ -301,12 +275,15 @@ body.no-hijack #spine-stage{
 }
 .spine-node.active{ fill:var(--accent); }
 
+/* The curve's own right anchor sits around ~70% of viewport width and
+   bulges left — the tag lives in the open space further left of that,
+   near the true left margin, regardless of how far any given card leans. */
 .vertebra-tag{
-  position:fixed; left:calc(50% - (var(--card-w) / 2) - 70px); z-index:6;
-  transform:translate(-100%, -50%);
+  position:fixed; left:clamp(20px, 6vw, 96px); z-index:6;
+  transform:translateY(-50%);
   top:50%;
   font-family:var(--font-mono);
-  text-align:right;
+  text-align:left;
   opacity:0; transition:opacity .5s ease, transform .5s var(--ease-spine);
   pointer-events:none;
 }
@@ -324,20 +301,6 @@ body.no-hijack #spine-stage{
   transition:transform .4s var(--ease-spine);
 }
 .vertebra-tag.show .vt-nerve{ transform:translateY(-50%) scaleX(1); }
-
-/* side-left is the default above (tag sits left of centre, text right-
-   aligned, nerve reaches rightward toward the spine) — this mirrors it for
-   vertebrae whose card leans left, so the label sits on the right instead. */
-.vertebra-tag.side-right{
-  left:auto; right:calc(50% - (var(--card-w) / 2) - 70px);
-  transform:translate(100%, -50%);
-  text-align:left;
-}
-.vertebra-tag.side-right .vt-nerve{
-  right:auto; left:-46px;
-  background:linear-gradient(to left, var(--accent), transparent);
-  transform-origin:right;
-}
 
 @media (max-width: 900px){
   .vertebra-tag{ display:none; }
@@ -360,9 +323,9 @@ body.no-hijack #spine-stage{
   background:var(--bg-elevated);
   border:1px solid var(--border);
   border-radius:22px;
-  padding:clamp(24px,4vw,44px);
+  padding:clamp(18px,3vw,32px);
   box-shadow:var(--shadow);
-  max-height:min(78vh, 720px);
+  max-height:min(58vh, 520px);
   overflow-y:auto;
   scrollbar-width:thin;
 }
@@ -372,7 +335,7 @@ body.no-hijack #spine-stage{
 .card .eyebrow{
   display:inline-flex; align-items:center; gap:8px;
   font-family:var(--font-mono); font-size:12px; letter-spacing:.1em;
-  color:var(--accent); text-transform:uppercase; margin-bottom:14px;
+  color:var(--accent); text-transform:uppercase; margin-bottom:10px;
 }
 .card .eyebrow::before{
   content:""; width:6px; height:6px; border-radius:50%; background:var(--accent);
@@ -382,15 +345,15 @@ body.no-hijack #spine-stage{
 /* ---- Hero (C1) ---- */
 .hero-face{ text-align:left; background:transparent; border:none; box-shadow:none; padding:0; max-height:none; }
 .hero-title{
-  font-size:clamp(2.4rem, 6.5vw, 4.6rem);
-  line-height:1.02;
-  margin-bottom:18px;
+  font-size:clamp(1.9rem, 5vw, 3.2rem);
+  line-height:1.05;
+  margin-bottom:12px;
 }
 .hero-title .rx{ color:var(--accent); }
-.hero-sub{ font-size:clamp(1rem,1.6vw,1.2rem); color:var(--fg-dim); max-width:52ch; margin-bottom:30px; }
+.hero-sub{ font-size:clamp(.95rem,1.4vw,1.1rem); color:var(--fg-dim); max-width:52ch; margin-bottom:18px; }
 .hero-cta-row{ display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
 .scroll-hint{
-  margin-top:56px; display:flex; align-items:center; gap:10px;
+  margin-top:22px; display:flex; align-items:center; gap:10px;
   font-family:var(--font-mono); font-size:11.5px; color:var(--fg-dim); letter-spacing:.1em; text-transform:uppercase;
 }
 .scroll-hint .chev{ animation:chevBounce 1.6s ease-in-out infinite; }
@@ -399,8 +362,8 @@ body.no-hijack #spine-stage{
 /* ---- Buttons ---- */
 .btn{
   display:inline-flex; align-items:center; gap:9px;
-  padding:12px 22px; border-radius:100px;
-  font-family:var(--font-mono); font-size:13px; letter-spacing:.03em;
+  padding:11px 20px; border-radius:100px;
+  font-family:var(--font-mono); font-size:12.5px; letter-spacing:.03em;
   border:1px solid var(--border);
   transition:transform .25s var(--ease-spine), background .25s ease, border-color .25s ease, box-shadow .25s ease;
 }
@@ -413,10 +376,10 @@ body.no-hijack #spine-stage{
 .btn-ember:hover{ background:var(--ember); color:var(--void); box-shadow:0 10px 30px -8px var(--ember); }
 
 /* ---- Project card ---- */
-.project-card h2{ font-size:clamp(1.5rem,2.6vw,2.1rem); margin-bottom:10px; }
-.project-tagline{ color:var(--accent); font-size:1rem; margin-bottom:16px; }
-.project-desc{ color:var(--fg-dim); margin-bottom:22px; }
-.tag-row{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:26px; }
+.project-card h2{ font-size:clamp(1.35rem,2.2vw,1.8rem); margin-bottom:8px; }
+.project-tagline{ color:var(--accent); font-size:.95rem; margin-bottom:10px; }
+.project-desc{ color:var(--fg-dim); margin-bottom:14px; }
+.tag-row{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
 .tag{
   font-family:var(--font-mono); font-size:11px; letter-spacing:.04em;
   padding:5px 11px; border-radius:100px; border:1px solid var(--border); color:var(--fg-dim);
@@ -427,46 +390,46 @@ body.no-hijack #spine-stage{
   border:1px solid var(--accent-2); color:var(--signal);
 }
 .status-pill.wip{ border-color:var(--ember-dim); color:var(--ember); }
-.card-actions{ display:flex; gap:12px; flex-wrap:wrap; }
+.card-actions{ display:flex; gap:10px; flex-wrap:wrap; }
 
 /* ---- Project index (compact grid vertebra) ---- */
-.index-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.index-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 @media (max-width:640px){ .index-grid{ grid-template-columns:1fr; } }
 .index-tile{
-  border:1px solid var(--border); border-radius:14px; padding:16px 18px;
+  border:1px solid var(--border); border-radius:14px; padding:14px 16px;
   background:var(--bg-elevated-2);
   transition:border-color .25s ease, transform .25s ease;
 }
 .index-tile:hover{ border-color:var(--accent-2); transform:translateY(-2px); }
-.index-tile h3{ font-size:1rem; margin-bottom:4px; }
-.index-tile p{ font-size:.85rem; color:var(--fg-dim); margin-bottom:12px; }
+.index-tile h3{ font-size:.95rem; margin-bottom:4px; }
+.index-tile p{ font-size:.82rem; color:var(--fg-dim); margin-bottom:10px; }
 .index-tile .tile-actions{ display:flex; gap:8px; flex-wrap:wrap; }
-.tile-actions .btn{ padding:7px 13px; font-size:11px; }
+.tile-actions .btn{ padding:6px 12px; font-size:11px; }
 
 /* ---- Patents ---- */
 .patent-item{
-  border-top:1px solid var(--border); padding:18px 0; display:flex; flex-direction:column; gap:6px;
+  border-top:1px solid var(--border); padding:12px 0; display:flex; flex-direction:column; gap:5px;
 }
 .patent-item:first-of-type{ border-top:none; padding-top:0; }
-.patent-item h3{ font-size:1.05rem; }
+.patent-item h3{ font-size:1rem; }
 .patent-meta{ font-family:var(--font-mono); font-size:11.5px; color:var(--accent); letter-spacing:.04em; }
-.patent-abstract{ color:var(--fg-dim); font-size:.9rem; }
-.empty-note{ color:var(--fg-dim); font-style:italic; font-size:.92rem; }
+.patent-abstract{ color:var(--fg-dim); font-size:.88rem; }
+.empty-note{ color:var(--fg-dim); font-style:italic; font-size:.9rem; }
 
 /* ---- Idea form ---- */
-.field{ margin-bottom:16px; }
-.field label{ display:block; font-family:var(--font-mono); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--fg-dim); margin-bottom:7px; }
+.field{ margin-bottom:12px; }
+.field label{ display:block; font-family:var(--font-mono); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--fg-dim); margin-bottom:6px; }
 .field input, .field textarea{
   width:100%; background:var(--bg-elevated-2); border:1px solid var(--border); border-radius:12px;
-  padding:12px 14px; color:var(--fg); font-family:var(--font-body); font-size:.95rem;
+  padding:10px 13px; color:var(--fg); font-family:var(--font-body); font-size:.92rem;
   transition:border-color .25s ease, box-shadow .25s ease;
 }
-.field textarea{ resize:vertical; min-height:110px; }
+.field textarea{ resize:vertical; min-height:78px; }
 .field input:focus, .field textarea:focus{
   outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--signal) 25%, transparent);
 }
-.form-note{ font-size:.82rem; color:var(--fg-dim); margin-top:12px; }
-.form-status{ margin-top:14px; font-family:var(--font-mono); font-size:.85rem; min-height:1.2em; }
+.form-note{ font-size:.8rem; color:var(--fg-dim); margin-top:8px; }
+.form-status{ margin-top:10px; font-family:var(--font-mono); font-size:.85rem; min-height:1.2em; }
 .form-status.ok{ color:var(--signal); }
 .form-status.err{ color:var(--ember); }
 
@@ -584,12 +547,16 @@ body.docs-mode{ overflow-y:auto; }
 @media (max-width:900px){
   nav#primary-nav{
     position:fixed; top:var(--topbar-h); left:0; right:0; bottom:0;
-    background:var(--bg); flex-direction:column; align-items:stretch; gap:2px;
-    padding:26px 24px; transform:translateX(100%); transition:transform .45s var(--ease-spine);
+    background:var(--bg); border:none; border-radius:0; padding:26px 24px;
+    flex-direction:column; align-items:stretch; gap:2px;
+    transform:translateX(100%); transition:transform .45s var(--ease-spine);
     z-index:1900;
   }
+  nav#primary-nav::before{ display:none; }
   nav#primary-nav.open{ transform:translateX(0); }
   .nav-link{ font-size:15px; padding:16px 6px; border-bottom:1px solid var(--border); border-radius:0; }
+  .nav-link::after{ display:none; }
+  .nav-link.active::before{ border-radius:0; }
   .hamburger{ display:block; }
 }
 

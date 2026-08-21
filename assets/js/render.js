@@ -172,23 +172,8 @@ window.SpineRender = (function () {
     `;
   }
 
-  // ---- lateral lean per slot ---------------------------------------------
-  // The spine is not a straight line — it wanders left/right as it goes
-  // down, and each vertebra sits on whichever side the curve leans toward
-  // at that point. Randomized per load, biased to alternate rather than
-  // wander the same direction for too long.
-  function generateLeans(n) {
-    const leans = [];
-    let prev = Math.random() < 0.5 ? -1 : 1;
-    for (let i = 0; i < n; i++) {
-      if (i > 0 && Math.random() < 0.72) prev = -prev; // ~72% chance to swap sides
-      leans.push(prev);
-    }
-    return leans;
-  }
-
   // Catmull-Rom -> cubic Bezier, so the curve threads smoothly through every
-  // control point instead of kinking at each one.
+  // sampled point instead of kinking at each one.
   function catmullRomPath(pts) {
     if (pts.length < 2) return "";
     if (pts.length === 2) return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
@@ -207,7 +192,14 @@ window.SpineRender = (function () {
     return d.trim();
   }
 
-  // ---- spine SVG (curved rail + fill + nodes) ----------------------------
+  // ---- spine SVG: an asymmetric C-curve, not a centred line --------------
+  // The spine is anchored toward the right at the very top and bottom of
+  // the screen and bulges left through the middle — an open C, not stuck
+  // on the centreline. That bulge is what leaves a clear column of empty
+  // space on the right, which is where every card lives (see
+  // spine-engine.js). The bulge widens on wider screens, and a slow
+  // secondary wave is layered on top so it reads as organic rather than a
+  // perfect geometric arc — randomized a little differently on every load.
   function buildSpine(wrapEl, slots) {
     wrapEl.innerHTML = "";
     const NS = "http://www.w3.org/2000/svg";
@@ -232,36 +224,49 @@ window.SpineRender = (function () {
 
     wrapEl.appendChild(svg);
 
-    const AMPLITUDE = 42; // px either side the curve wanders toward a leaning vertebra
-    const W = 200; // viewBox width — keep in sync with the svg's CSS width
+    const seedPhase = Math.random() * Math.PI * 2; // per-load organic variation
+
+    function curveX(y, w, h, amplitude) {
+      const rightAnchor = w * 0.7;
+      const t = h > 0 ? y / h : 0;
+      const bulge = Math.sin(t * Math.PI); // 0 at top & bottom, 1 at the middle
+      const wobble = Math.sin(t * 6.2 + seedPhase) * (amplitude * 0.1);
+      return rightAnchor - bulge * amplitude + wobble;
+    }
 
     function layout() {
+      const w = window.innerWidth;
       const h = wrapEl.clientHeight || window.innerHeight;
-      svg.setAttribute("viewBox", `0 0 ${W} ${h}`);
-      const cx = W / 2;
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+
+      // Wider viewport -> wider bulge, so the curve reads proportionally
+      // the same on a phone and on an ultrawide monitor.
+      const amplitude = Math.max(60, Math.min(340, w * 0.24));
+
+      const RAIL_SAMPLES = 26;
+      const railPts = [];
+      for (let i = 0; i <= RAIL_SAMPLES; i++) {
+        const y = (h * i) / RAIL_SAMPLES;
+        railPts.push({ x: curveX(y, w, h, amplitude), y });
+      }
+
       const yTop = h * BAND_TOP;
       const yBot = h * BAND_BOTTOM;
-
-      const slotPts = slots.map((slot, i) => {
-        const frac = slots.length > 1 ? i / (slots.length - 1) : 0.5;
-        return { x: cx + (slot.lean || 0) * AMPLITUDE, y: yTop + (yBot - yTop) * frac };
-      });
-
-      const railPts = [
-        { x: cx, y: 0 },
-        { x: cx, y: yTop * 0.55 },
-        ...slotPts,
-        { x: cx, y: yBot + (h - yBot) * 0.45 },
-        { x: cx, y: h },
-      ];
-      const fillPts = [{ x: cx, y: yTop }, ...slotPts, { x: cx, y: yBot }];
+      const FILL_SAMPLES = 16;
+      const fillPts = [];
+      for (let i = 0; i <= FILL_SAMPLES; i++) {
+        const y = yTop + ((yBot - yTop) * i) / FILL_SAMPLES;
+        fillPts.push({ x: curveX(y, w, h, amplitude), y });
+      }
 
       rail.setAttribute("d", catmullRomPath(railPts));
       fill.setAttribute("d", catmullRomPath(fillPts));
 
       nodeEls.forEach((node, i) => {
-        node.setAttribute("cx", String(slotPts[i].x));
-        node.setAttribute("cy", String(slotPts[i].y));
+        const frac = slots.length > 1 ? i / (slots.length - 1) : 0.5;
+        const y = yTop + (yBot - yTop) * frac;
+        node.setAttribute("cx", String(curveX(y, w, h, amplitude)));
+        node.setAttribute("cy", String(y));
       });
     }
 
@@ -271,13 +276,12 @@ window.SpineRender = (function () {
     return { fillEl: fill, nodeEls, relayout: layout };
   }
 
-  // ---- vertebra tags (side labels — always the side opposite the card) --
+  // ---- vertebra tags (always sit left, in the curve's own space) --------
   function buildTags(wrapEl, slots) {
     wrapEl.innerHTML = "";
     return slots.map((slot) => {
       const div = document.createElement("div");
-      const tagSide = (slot.lean || 0) > 0 ? "side-left" : "side-right";
-      div.className = "vertebra-tag " + tagSide;
+      div.className = "vertebra-tag";
       div.innerHTML = `<div class="vt-index">${esc(slot.tag)}</div><div class="vt-name">${esc(slot.name)}</div><div class="vt-nerve"></div>`;
       wrapEl.appendChild(div);
       return div;
@@ -304,7 +308,6 @@ window.SpineRender = (function () {
       const card = document.createElement("div");
       card.className = "card";
       card.dataset.slot = slot.key;
-      card.dataset.lean = String(slot.lean || 0);
       card.setAttribute("role", "group");
       card.setAttribute("aria-roledescription", "vertebra");
       card.setAttribute("aria-label", slot.tag + " " + slot.name);
@@ -321,9 +324,6 @@ window.SpineRender = (function () {
 
   function mount(cfg) {
     const slots = buildSlots(cfg);
-    const leans = generateLeans(slots.length);
-    slots.forEach((slot, i) => (slot.lean = leans[i]));
-
     const cards = buildCards(document.getElementById("spine-carousel"), slots);
     const { fillEl, nodeEls } = buildSpine(document.querySelector(".spine-line-wrap"), slots);
     const tags = buildTags(document.getElementById("vertebra-tags"), slots);
