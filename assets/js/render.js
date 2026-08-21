@@ -197,10 +197,6 @@ window.SpineRender = (function () {
     const svg = document.createElementNS(NS, "svg");
     svg.setAttribute("preserveAspectRatio", "none");
 
-    const rail = document.createElementNS(NS, "path"); // faint static centre guide
-    rail.setAttribute("class", "spine-rail");
-    svg.appendChild(rail);
-
     const N = slots.length;
     const segCount = Math.max(0, N - 1);
     const startPhase = Math.random() < 0.5 ? 1 : -1; // which way segment 0 bows, per load
@@ -244,8 +240,6 @@ window.SpineRender = (function () {
       const yTop = h * BAND_TOP;
       const yBot = h * BAND_BOTTOM;
       const midY = (yTop + yBot) / 2;
-
-      rail.setAttribute("d", `M ${cx} 0 L ${cx} ${h}`);
 
       // A clearly visible bow — this is the whole visual now, so it can
       // be bold. Capped so it never runs the arc itself off-screen.

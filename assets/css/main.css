@@ -268,7 +268,6 @@ body.no-hijack #spine-stage{
   mask-image:linear-gradient(to bottom, transparent 0, transparent 20%, black 26%, black 74%, transparent 80%, transparent 100%);
 }
 .spine-line-wrap svg{ display:block; height:100%; width:100%; overflow:visible; }
-.spine-rail{ stroke:var(--border); stroke-width:2; fill:none; }
 .spine-fill{
   stroke:var(--accent); stroke-width:2.5; fill:none;
   stroke-linecap:round; filter:drop-shadow(0 0 6px var(--signal));
