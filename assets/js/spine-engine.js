@@ -12,6 +12,12 @@
    full scale, in focus. Neighbours recede in opacity/blur/scale with
    their angular distance, exactly like looking at a rotating cylinder
    from a fixed camera.
+
+   Each card also carries a fixed lateral "lean" (left/right of the spine,
+   read from data-lean — see render.js, which derives it from the curve).
+   That offset is applied as the outermost transform, in screen space, so
+   it stays a clean left/right placement no matter how the card is
+   currently rotated.
    ----------------------------------------------------------------------- */
 window.SpineEngine = (function () {
   function create(opts) {
@@ -27,15 +33,20 @@ window.SpineEngine = (function () {
 
     const N = cards.length;
     const SEGMENT = 52; // degrees between adjacent slots on the drum
+    const leans = cards.map((c) => parseFloat(c.dataset.lean || "0") || 0);
     let target = 0;
     let current = 0;
     let radius = 620;
+    let leanPx = 0;
     let spineLength = 0;
     let raf = null;
 
     function computeRadius() {
       const w = window.innerWidth;
       radius = Math.max(300, Math.min(680, w * 0.34));
+      // mirrors --card-w: min(440px, 76vw) in main.css
+      const cardW = Math.min(440, w * 0.76);
+      leanPx = Math.max(0, Math.min(190, (w - cardW) / 2 - 36));
     }
     computeRadius();
 
@@ -127,8 +138,10 @@ window.SpineEngine = (function () {
         const blur = Math.min(11, absRel / 8.5);
         const bright = 0.5 + 0.5 * Math.max(0, facing);
         const bob = Math.sin(rad) * 16;
+        const lean = leans[i] * leanPx;
 
         card.style.transform =
+          "translateX(" + lean.toFixed(1) + "px) " +
           "translate(-50%,-50%) rotateY(" + rel.toFixed(2) + "deg) " +
           "translateZ(" + radius + "px) translateY(" + bob.toFixed(1) + "px) " +
           "scale(" + scale.toFixed(3) + ")";

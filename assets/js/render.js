@@ -67,7 +67,7 @@ window.SpineRender = (function () {
       <p class="hero-sub">${esc(b.subtagline || "")}</p>
       <div class="hero-cta-row">
         <button class="btn btn-primary" data-goto="work" type="button">See the work</button>
-        <button class="btn btn-ghost" data-goto="idea" type="button">Pitch me something weird</button>
+        <button class="btn btn-ghost" data-goto="idea" type="button">Pitch an idea</button>
       </div>
       <div class="scroll-hint"><span class="chev">&darr;</span>&nbsp; scroll, swipe, or press &darr; — the spine carries you</div>
     `;
@@ -162,8 +162,8 @@ window.SpineRender = (function () {
     const b = site.brand || {};
     return `
       <span class="eyebrow">coccyx / end of the line</span>
-      <h2 class="footer-h2">That's the whole spine.</h2>
-      <p class="project-desc">${esc(b.handle || "")} — thanks for scrolling through someone's entire nervous system.</p>
+      <h2 class="footer-h2">End of the line.</h2>
+      <p class="project-desc">${esc(b.handle || "")} — there is no vertebra after this one.</p>
       <div class="footer-links">
         ${(site.social || []).map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a>`).join("")}
         <a href="#" data-goto="home">Back to C1</a>
@@ -172,7 +172,42 @@ window.SpineRender = (function () {
     `;
   }
 
-  // ---- spine SVG (rail + fill + nodes) -----------------------------------
+  // ---- lateral lean per slot ---------------------------------------------
+  // The spine is not a straight line — it wanders left/right as it goes
+  // down, and each vertebra sits on whichever side the curve leans toward
+  // at that point. Randomized per load, biased to alternate rather than
+  // wander the same direction for too long.
+  function generateLeans(n) {
+    const leans = [];
+    let prev = Math.random() < 0.5 ? -1 : 1;
+    for (let i = 0; i < n; i++) {
+      if (i > 0 && Math.random() < 0.72) prev = -prev; // ~72% chance to swap sides
+      leans.push(prev);
+    }
+    return leans;
+  }
+
+  // Catmull-Rom -> cubic Bezier, so the curve threads smoothly through every
+  // control point instead of kinking at each one.
+  function catmullRomPath(pts) {
+    if (pts.length < 2) return "";
+    if (pts.length === 2) return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
+    let d = `M ${pts[0].x} ${pts[0].y} `;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2] || p2;
+      const c1x = p1.x + (p2.x - p0.x) / 6;
+      const c1y = p1.y + (p2.y - p0.y) / 6;
+      const c2x = p2.x - (p3.x - p1.x) / 6;
+      const c2y = p2.y - (p3.y - p1.y) / 6;
+      d += `C ${c1x} ${c1y} ${c2x} ${c2y} ${p2.x} ${p2.y} `;
+    }
+    return d.trim();
+  }
+
+  // ---- spine SVG (curved rail + fill + nodes) ----------------------------
   function buildSpine(wrapEl, slots) {
     wrapEl.innerHTML = "";
     const NS = "http://www.w3.org/2000/svg";
@@ -197,21 +232,36 @@ window.SpineRender = (function () {
 
     wrapEl.appendChild(svg);
 
+    const AMPLITUDE = 42; // px either side the curve wanders toward a leaning vertebra
+    const W = 200; // viewBox width — keep in sync with the svg's CSS width
+
     function layout() {
       const h = wrapEl.clientHeight || window.innerHeight;
-      const w = 40;
-      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-      const cx = w / 2;
-      rail.setAttribute("d", `M ${cx} 0 L ${cx} ${h}`);
+      svg.setAttribute("viewBox", `0 0 ${W} ${h}`);
+      const cx = W / 2;
       const yTop = h * BAND_TOP;
       const yBot = h * BAND_BOTTOM;
-      fill.setAttribute("d", `M ${cx} ${yTop} L ${cx} ${yBot}`);
+
+      const slotPts = slots.map((slot, i) => {
+        const frac = slots.length > 1 ? i / (slots.length - 1) : 0.5;
+        return { x: cx + (slot.lean || 0) * AMPLITUDE, y: yTop + (yBot - yTop) * frac };
+      });
+
+      const railPts = [
+        { x: cx, y: 0 },
+        { x: cx, y: yTop * 0.55 },
+        ...slotPts,
+        { x: cx, y: yBot + (h - yBot) * 0.45 },
+        { x: cx, y: h },
+      ];
+      const fillPts = [{ x: cx, y: yTop }, ...slotPts, { x: cx, y: yBot }];
+
+      rail.setAttribute("d", catmullRomPath(railPts));
+      fill.setAttribute("d", catmullRomPath(fillPts));
 
       nodeEls.forEach((node, i) => {
-        const frac = slots.length > 1 ? i / (slots.length - 1) : 0.5;
-        const y = yTop + (yBot - yTop) * frac;
-        node.setAttribute("cx", String(cx));
-        node.setAttribute("cy", String(y));
+        node.setAttribute("cx", String(slotPts[i].x));
+        node.setAttribute("cy", String(slotPts[i].y));
       });
     }
 
@@ -221,12 +271,13 @@ window.SpineRender = (function () {
     return { fillEl: fill, nodeEls, relayout: layout };
   }
 
-  // ---- vertebra tags (side labels) ---------------------------------------
+  // ---- vertebra tags (side labels — always the side opposite the card) --
   function buildTags(wrapEl, slots) {
     wrapEl.innerHTML = "";
     return slots.map((slot) => {
       const div = document.createElement("div");
-      div.className = "vertebra-tag";
+      const tagSide = (slot.lean || 0) > 0 ? "side-left" : "side-right";
+      div.className = "vertebra-tag " + tagSide;
       div.innerHTML = `<div class="vt-index">${esc(slot.tag)}</div><div class="vt-name">${esc(slot.name)}</div><div class="vt-nerve"></div>`;
       wrapEl.appendChild(div);
       return div;
@@ -253,6 +304,7 @@ window.SpineRender = (function () {
       const card = document.createElement("div");
       card.className = "card";
       card.dataset.slot = slot.key;
+      card.dataset.lean = String(slot.lean || 0);
       card.setAttribute("role", "group");
       card.setAttribute("aria-roledescription", "vertebra");
       card.setAttribute("aria-label", slot.tag + " " + slot.name);
@@ -269,6 +321,9 @@ window.SpineRender = (function () {
 
   function mount(cfg) {
     const slots = buildSlots(cfg);
+    const leans = generateLeans(slots.length);
+    slots.forEach((slot, i) => (slot.lean = leans[i]));
+
     const cards = buildCards(document.getElementById("spine-carousel"), slots);
     const { fillEl, nodeEls } = buildSpine(document.querySelector(".spine-line-wrap"), slots);
     const tags = buildTags(document.getElementById("vertebra-tags"), slots);

@@ -138,7 +138,7 @@ that request fails.
 
 ## The spine mechanic, if you want to tune it
 
-All of it lives in `assets/js/spine-engine.js`:
+Rotation and input, in `assets/js/spine-engine.js`:
 
 - `SEGMENT` — degrees between adjacent cards on the drum. Smaller = cards
   overlap more before the current one is fully in focus; larger = a more
@@ -147,6 +147,26 @@ All of it lives in `assets/js/spine-engine.js`:
   toward your scroll input. Lower = heavier/slower, higher = snappier.
 - the wheel/touch multipliers (`0.0026`, `0.014`) — how much scroll/swipe
   distance maps to rotation.
+- `leanPx` (computed in `computeRadius()`) — how far a card sits left or
+  right of the spine once it's in focus. It's derived from viewport and
+  card width so it never pushes a card off-screen; the `190` cap is the
+  most it will ever lean on a wide screen.
+
+The curve itself, in `assets/js/render.js`:
+
+- `generateLeans()` — decides, per vertebra, which side of the spine it
+  sits on (a card's `data-lean` of `-1`/`+1`, read by the engine above).
+  It's randomized per page load and biased to alternate sides rather than
+  drift the same direction for long — see the `0.72` swap probability.
+- `AMPLITUDE` in `buildSpine()` — how far the spine curve itself bends
+  toward a leaning vertebra. This is a much smaller number than `leanPx`
+  on purpose: the line should visibly lean, not travel as far as the card
+  does.
+- Both the rail and the fill are built with `catmullRomPath()`, which
+  threads a smooth curve through those same per-vertebra points — nothing
+  about the trace/dash-offset progress mechanic needed to change when the
+  line went from straight to curved, since SVG path length is geometric
+  either way.
 
 The visible band of the spine line (the middle 60% of the screen) is set in
 two places that need to stay in sync: the `mask-image` stops in

@@ -44,7 +44,7 @@
 
   --topbar-h:76px;
   --radius:620px;
-  --card-w:min(560px, 82vw);
+  --card-w:min(440px, 76vw);
   --ease-spine:cubic-bezier(.16,.84,.32,1);
   color-scheme: dark;
 }
@@ -150,7 +150,7 @@ p{ margin:0; }
 .loader-bar > span{
   position:absolute; inset:0 100% 0 0;
   background:linear-gradient(90deg, var(--signal-2), var(--signal));
-  animation:loaderFill 3.4s var(--ease-spine) forwards;
+  animation:loaderFill 4.6s var(--ease-spine) forwards;
 }
 @keyframes loaderFill{ to{ right:0; } }
 
@@ -289,7 +289,7 @@ body.no-hijack #spine-stage{
   -webkit-mask-image:linear-gradient(to bottom, transparent 0, transparent 20%, black 26%, black 74%, transparent 80%, transparent 100%);
   mask-image:linear-gradient(to bottom, transparent 0, transparent 20%, black 26%, black 74%, transparent 80%, transparent 100%);
 }
-.spine-line-wrap svg{ height:100%; width:120px; overflow:visible; }
+.spine-line-wrap svg{ height:100%; width:200px; overflow:visible; }
 .spine-rail{ stroke:var(--border); stroke-width:2; fill:none; }
 .spine-fill{
   stroke:var(--accent); stroke-width:2.5; fill:none;
@@ -324,6 +324,20 @@ body.no-hijack #spine-stage{
   transition:transform .4s var(--ease-spine);
 }
 .vertebra-tag.show .vt-nerve{ transform:translateY(-50%) scaleX(1); }
+
+/* side-left is the default above (tag sits left of centre, text right-
+   aligned, nerve reaches rightward toward the spine) — this mirrors it for
+   vertebrae whose card leans left, so the label sits on the right instead. */
+.vertebra-tag.side-right{
+  left:auto; right:calc(50% - (var(--card-w) / 2) - 70px);
+  transform:translate(100%, -50%);
+  text-align:left;
+}
+.vertebra-tag.side-right .vt-nerve{
+  right:auto; left:-46px;
+  background:linear-gradient(to left, var(--accent), transparent);
+  transform-origin:right;
+}
 
 @media (max-width: 900px){
   .vertebra-tag{ display:none; }

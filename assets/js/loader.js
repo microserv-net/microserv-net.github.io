@@ -3,11 +3,11 @@
    spine becomes the real one driving the page. */
 window.SpineLoader = (function () {
   const LINES = [
-    "counting vertebrae... 33, give or take",
-    "warming the signal line",
+    "counting vertebrae",
+    "pressurizing the discs",
+    "calibrating the curve",
+    "routing the signal",
     "aligning C1 through the coccyx",
-    "this is a strange way to load a website",
-    "yes, it rotates. no, that wasn't necessary",
     "spine assembled — handing off control",
   ];
 
@@ -27,8 +27,8 @@ window.SpineLoader = (function () {
   }
 
   async function run(textEl, opts) {
-    const speed = (opts && opts.speed) || 26;
-    const pause = (opts && opts.pause) || 380;
+    const speed = (opts && opts.speed) || 20;
+    const pause = (opts && opts.pause) || 300;
     for (const line of LINES) {
       await typeLine(textEl, line, speed);
       await new Promise((r) => setTimeout(r, pause));
