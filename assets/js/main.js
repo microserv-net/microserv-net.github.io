@@ -6,7 +6,7 @@
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (prefersReducedMotion) body.classList.add("no-hijack");
 
-  const loaderRoot = document.getElementById("loader-curve");
+  const loaderRoot = document.getElementById("loader-grid");
   const loaderPromise = loaderRoot
     ? window.SpineLoader.run()
     : new Promise((r) => setTimeout(r, 1200));
@@ -29,8 +29,6 @@
   window.SpineTheme.init(cfg.site.theme);
 
   const { slots, cards, tags, spineCurve } = window.SpineRender.mount(cfg);
-
-  const dotsWrap = document.getElementById("progress-dots");
 
   function navKeyForSlotKey(key) {
     if (key === "home" || key === "patents" || key === "idea" || key === "contact") return key;
@@ -62,18 +60,14 @@
   }
 
   if (!prefersReducedMotion) {
-    const dots = window.SpineRender.buildDots(dotsWrap, slots, (i) => engine && engine.goTo(i));
     engine = window.SpineEngine.create({
       stage: document.getElementById("spine-stage"),
       cards,
       tags,
-      dots,
       spineCurve,
       onChange: (activeIndex) => highlightNav(activeIndex),
     });
     highlightNav(0);
-  } else {
-    dotsWrap && (dotsWrap.style.display = "none");
   }
 
   navLinks.forEach((link) => {

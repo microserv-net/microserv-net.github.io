@@ -29,7 +29,6 @@ window.SpineEngine = (function () {
       stage, // container that owns the wheel/touch listeners
       cards, // array of card elements, in slot order
       tags, // array of vertebra-tag elements, in slot order
-      dots, // array of progress-dot <button> elements, in slot order
       spineCurve, // { setProgress(current) } — see render.js buildSpine()
       onChange, // (activeIndex, fraction) => void
     } = opts;
@@ -46,7 +45,7 @@ window.SpineEngine = (function () {
       // Mirrors --card-w: min(500px, 78vw) in main.css.
       const cardW = Math.min(500, w * 0.78);
       const cardHalf = cardW / 2;
-      const edgeMargin = 24; // gap between the card's outer edge and the viewport edge
+      const edgeMargin = 56; // gap between the card's outer edge and the viewport edge
 
       // Cards sit close to the viewport edges — wide apart, not just a
       // small offset from centre — leaving the curve real room to swing
@@ -188,7 +187,6 @@ window.SpineEngine = (function () {
         for (let i = 0; i < N; i++) {
           const isActive = i === activeIndex;
           if (tags[i]) tags[i].classList.toggle("show", isActive);
-          if (dots[i]) dots[i].classList.toggle("active", isActive);
           cards[i].setAttribute("aria-hidden", isActive ? "false" : "true");
           cards[i].toggleAttribute("inert", !isActive);
         }

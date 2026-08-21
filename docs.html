@@ -14,27 +14,31 @@
 <body class="docs-mode">
 
 <header id="topbar" style="animation:none; transform:translateY(0);">
-  <a class="brand" href="index.html">
+  <a class="brand" href="https://github.com/microserv-net" target="_blank" rel="noopener" aria-label="Microservices.net.in on GitHub">
     <span class="brand-mark">
-      <svg viewBox="0 0 30 38" aria-hidden="true">
-        <path d="M18 6 Q10 19 18 32" fill="none" stroke="var(--border)" stroke-width="2"/>
-        <circle class="bm-dot" cx="18" cy="6" r="3" fill="var(--signal)"/>
-        <circle class="bm-dot" cx="12" cy="19" r="3" fill="var(--signal)"/>
-        <circle class="bm-dot" cx="18" cy="32" r="3" fill="var(--signal)"/>
+      <svg viewBox="0 0 30 30" aria-hidden="true">
+        <rect x="3" y="3" width="10" height="10" rx="2" fill="var(--border)"/>
+        <rect x="17" y="3" width="10" height="10" rx="2" fill="var(--border)"/>
+        <rect x="3" y="17" width="10" height="10" rx="2" fill="var(--border)"/>
+        <rect x="17" y="17" width="10" height="10" rx="2" fill="var(--border)"/>
+        <circle class="bm-dot" cx="15" cy="15" r="3.2" fill="var(--signal)"/>
       </svg>
     </span>
-    <span class="brand-word">d33p<b>ster</b></span>
+    <span class="brand-word">Microservices<b>.net.in</b></span>
   </a>
   <nav id="primary-nav" aria-label="Primary">
+    <svg class="nav-wave" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0,5 C8,0 17,0 25,5 C33,10 42,10 50,5 C58,0 67,0 75,5 C83,10 92,10 100,5" />
+    </svg>
     <a class="nav-link" href="index.html">Back to the spine</a>
   </nav>
   <div class="topbar-controls">
-    <div class="theme-switch" id="theme-switch" role="group" aria-label="Theme">
-      <span class="switch-pill" aria-hidden="true"></span>
-      <button type="button" data-mode="auto" title="Auto (by your timezone)">A</button>
-      <button type="button" data-mode="light" title="Light" aria-label="Light theme">&#9728;</button>
-      <button type="button" data-mode="dark" title="Dark" aria-label="Dark theme">&#9789;</button>
-    </div>
+    <button class="theme-cycle" id="theme-cycle" type="button" data-mode="auto" aria-label="Theme: auto (tap to change)">
+      <span class="tc-ring" aria-hidden="true"></span>
+      <span class="tc-glyph tc-auto" aria-hidden="true">A</span>
+      <span class="tc-glyph tc-light" aria-hidden="true">&#9728;</span>
+      <span class="tc-glyph tc-dark" aria-hidden="true">&#9789;</span>
+    </button>
     <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>

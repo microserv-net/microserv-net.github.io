@@ -238,12 +238,21 @@ window.SpineRender = (function () {
       const midY = (yTop + yBot) / 2;
 
       // Mirrors computeLean() in spine-engine.js exactly — same formula,
-      // same breakpoint — so the curve swings out to precisely where
-      // each card sits rather than an independent guess at it.
+      // same breakpoint — so "where each card sits" agrees between files.
       const cardW = Math.min(500, w * 0.78);
       const cardHalf = cardW / 2;
-      const edgeMargin = 24;
+      const edgeMargin = 56;
       const leanPx = w >= 640 ? Math.max(0, w / 2 - cardHalf - edgeMargin) : 0;
+
+      // The curve should visually reach at least 30% of the way INTO the
+      // card from its near edge, not just approach it — that's what makes
+      // it read as piercing behind the card rather than stopping short.
+      // A quadratic bezier's peak deviation from its shared start/end
+      // point is exactly half its control point's offset, so the control
+      // point has to overshoot the actual visual target by 2x.
+      const pierceFrac = 0.3;
+      const peakOffset = Math.max(0, leanPx - (0.5 - pierceFrac) * cardW);
+      const controlOffset = peakOffset * 2;
 
       // Where the curve reaches its closest approach to each card,
       // vertically — inside the card's own vertical span, not just at
@@ -252,8 +261,8 @@ window.SpineRender = (function () {
       const lowerY = midY + (yBot - midY) * 0.4;
 
       segPaths.forEach((p, i) => {
-        const xFrom = cx + (slots[i].lean || 0) * leanPx;
-        const xTo = cx + (slots[i + 1].lean || 0) * leanPx;
+        const xFrom = cx + (slots[i].lean || 0) * controlOffset;
+        const xTo = cx + (slots[i + 1].lean || 0) * controlOffset;
         const d =
           `M ${cx} ${yTop} Q ${xFrom} ${upperY} ${cx} ${midY} ` +
           `Q ${xTo} ${lowerY} ${cx} ${yBot}`;
@@ -284,11 +293,14 @@ window.SpineRender = (function () {
       const segIndex = Math.max(0, Math.min(segCount - 1, Math.floor(current)));
       const frac = Math.max(0, Math.min(1, current - segIndex));
 
-      // The same "everything drifts upward as you go" motion the cards
-      // have (see spine-engine.js) — as the arc traces in, it also rises
-      // slightly, so the line reads as passing by rather than sitting
-      // static while only its stroke changes.
-      const drift = (-frac * 22).toFixed(1) + "px";
+      // Driven by "current" (the whole-journey scroll position) rather
+      // than "frac" (progress within just this one segment) — frac would
+      // reset to 0 at every segment boundary, making the line visibly
+      // snap back each time a new arc took over. Tying it to current
+      // instead means the drift accumulates continuously across the
+      // entire scroll, the same way the cards never "reset" either: one
+      // unbroken upward motion, not N separate ones stitched together.
+      const drift = (-current * 22).toFixed(1) + "px";
 
       segPaths.forEach((p, i) => {
         if (i === segIndex) {
@@ -329,19 +341,6 @@ window.SpineRender = (function () {
     });
   }
 
-  // ---- progress dots -------------------------------------------------------
-  function buildDots(wrapEl, slots, onClick) {
-    wrapEl.innerHTML = "";
-    return slots.map((slot, i) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.setAttribute("aria-label", "Go to " + slot.tag + " — " + slot.name);
-      btn.addEventListener("click", () => onClick(i));
-      wrapEl.appendChild(btn);
-      return btn;
-    });
-  }
-
   // ---- cards --------------------------------------------------------------
   function buildCards(wrapEl, slots) {
     wrapEl.innerHTML = "";
@@ -376,5 +375,5 @@ window.SpineRender = (function () {
     return { slots, cards, tags, spineCurve };
   }
 
-  return { mount, buildDots, esc };
+  return { mount, esc };
 })();

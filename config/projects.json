@@ -22,7 +22,7 @@
       "name": "Example Project (replace or delete me)",
       "tagline": "One line describing what it does and why it exists.",
       "description": "A longer description shown on the project's own vertebra when it is marked featured, or in the compact index otherwise. Plain text or simple sentences are safest -- this is rendered as-is, no markdown parsing here (use the docs system below for long-form writeups).",
-      "url": "https://github.com/d33pster/example-project",
+      "url": "https://github.com/microserv-net/example-project",
       "demoUrl": "",
       "tags": ["example", "delete-me"],
       "status": "wip",

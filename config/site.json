@@ -1,10 +1,10 @@
 {
   "brand": {
-    "name": "d33pster",
-    "displayName": "d33p0st",
+    "name": "Microservices.net.in",
+    "displayName": "Microservices.net.in",
     "tagline": "I build the things a sane roadmap wouldn't schedule.",
     "subtagline": "Systems, compilers, and other reactions I probably shouldn't have started.",
-    "handle": "@d33pster"
+    "handle": "@microserv-net"
   },
 
   "contact": {
@@ -36,7 +36,7 @@
   },
 
   "social": [
-    { "label": "GitHub", "url": "https://github.com/d33pster" },
+    { "label": "GitHub", "url": "https://github.com/microserv-net" },
     { "label": "Email", "url": "mailto:d33p0st@gmail.com" }
   ]
 }

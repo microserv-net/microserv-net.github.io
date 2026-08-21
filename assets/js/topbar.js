@@ -1,24 +1,23 @@
-/* topbar.js — theme switch + mobile menu. Shared by index.html and docs.html. */
+/* topbar.js — theme cycle button + mobile menu. Shared by index.html and docs.html. */
 window.SpineTopbar = (function () {
+  const MODES = ["auto", "light", "dark"];
+
   function initThemeSwitch(themeCfg) {
-    const switchEl = document.getElementById("theme-switch");
-    if (!switchEl) return;
-    const pill = switchEl.querySelector(".switch-pill");
-    const buttons = Array.from(switchEl.querySelectorAll("button"));
+    const btn = document.getElementById("theme-cycle");
+    if (!btn) return;
 
     function paint(mode) {
-      buttons.forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
-      const idx = buttons.findIndex((b) => b.dataset.mode === mode);
-      if (pill && idx >= 0) pill.style.transform = `translateX(${idx * 30}px)`;
+      btn.dataset.mode = mode;
+      btn.setAttribute("aria-label", "Theme: " + mode + " (tap to change)");
     }
 
     paint(window.SpineTheme.getMode());
 
-    buttons.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        window.SpineTheme.setMode(btn.dataset.mode, themeCfg);
-        paint(btn.dataset.mode);
-      });
+    btn.addEventListener("click", () => {
+      const current = window.SpineTheme.getMode();
+      const next = MODES[(MODES.indexOf(current) + 1) % MODES.length];
+      window.SpineTheme.setMode(next, themeCfg);
+      paint(next);
     });
 
     window.addEventListener("spine:theme-change", (e) => paint(e.detail.mode));

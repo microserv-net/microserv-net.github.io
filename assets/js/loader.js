@@ -1,93 +1,82 @@
 /* loader.js
    -----------------------------------------------------------------------
-   Third pass. Now that the real spine is an alternating S-wave held near
-   centre (not a single right-anchored C), the loader previews that exact
-   shape in miniature: two arcs bowing opposite ways, drawn in one
-   continuous stroke, three nodes lighting up as the trace passes them.
-   No percentage counter this time, no narrated sentences — a single
-   status word swaps instantly (not typed) as each stage completes.
+   Fourth pass, and deliberately nothing like the previous three: no
+   curve, no snake, no spine imagery at all. A 7x7 lattice of cells starts
+   as pure jittering static — each one vibrating at a random offset,
+   flickering — and settles into a fixed grid in a randomized ripple, one
+   cell at a time, like a crystal forming out of chaos. A "CONVERGENCE"
+   readout counts a jittery error value down to exactly zero as the last
+   cells lock in. It's an instrument watching its own noise die down, not
+   a story or a shape — weird on its own terms rather than borrowing the
+   site's main visual trick.
    ----------------------------------------------------------------------- */
 window.SpineLoader = (function () {
-  const W = 200, H = 300;
-  const CX = W / 2;
-  const TOP_Y = 18, MID_Y = H / 2, BOT_Y = H - 18;
-  const AMP = 44;
-  const DURATION = 1700; // ms — the S-wave drawing itself
-  const SETTLE = 300; // ms pause once drawn, before handing off control
-  const WORDS = ["curve", "signal", "spine", "ready"];
+  const COLS = 7, ROWS = 7;
+  const DURATION = 1900; // ms — cells settling, spread across this window
+  const SETTLE = 320; // ms pause once the last cell locks, before handoff
 
   function build(root) {
     root.innerHTML = "";
-    const NS = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(NS, "svg");
-    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-    svg.setAttribute("aria-hidden", "true");
+    const cells = [];
+    const cx = (COLS - 1) / 2;
+    const cy = (ROWS - 1) / 2;
+    const maxDist = Math.hypot(cx, cy);
 
-    // top -> mid bows left, mid -> bottom bows right: the same alternating
-    // logic as the real spine, just two segments instead of many
-    const d =
-      `M ${CX} ${TOP_Y} Q ${CX - AMP} ${(TOP_Y + MID_Y) / 2} ${CX} ${MID_Y} ` +
-      `Q ${CX + AMP} ${(MID_Y + BOT_Y) / 2} ${CX} ${BOT_Y}`;
+    for (let i = 0; i < COLS * ROWS; i++) {
+      const col = i % COLS;
+      const row = Math.floor(i / COLS);
+      const dist = Math.hypot(col - cx, row - cy) / maxDist; // 0 centre -> 1 corner
 
-    const rail = document.createElementNS(NS, "path");
-    rail.setAttribute("class", "lc-rail");
-    rail.setAttribute("d", d);
-    svg.appendChild(rail);
-
-    const trace = document.createElementNS(NS, "path");
-    trace.setAttribute("class", "lc-trace");
-    trace.setAttribute("d", d);
-    svg.appendChild(trace);
-
-    [
-      { x: CX, y: TOP_Y, delay: 0 },
-      { x: CX, y: MID_Y, delay: DURATION * 0.42 },
-      { x: CX, y: BOT_Y, delay: DURATION * 0.86 },
-    ].forEach((p) => {
-      const c = document.createElementNS(NS, "circle");
-      c.setAttribute("class", "lc-node");
-      c.setAttribute("cx", String(p.x));
-      c.setAttribute("cy", String(p.y));
-      c.setAttribute("r", "5.5");
-      c.style.transitionDelay = p.delay.toFixed(0) + "ms";
-      svg.appendChild(c);
-    });
-
-    root.appendChild(svg);
-    return { trace };
+      const cell = document.createElement("div");
+      cell.className = "loader-cell";
+      const jx = (Math.random() - 0.5) * 46;
+      const jy = (Math.random() - 0.5) * 46;
+      const jr = (Math.random() - 0.5) * 50;
+      cell.style.setProperty("--jx", jx.toFixed(1) + "px");
+      cell.style.setProperty("--jy", jy.toFixed(1) + "px");
+      cell.style.setProperty("--jr", jr.toFixed(1) + "deg");
+      // brighter near the centre once settled, like a soft aperture
+      cell.style.setProperty("--final-opacity", Math.max(0.32, 1 - dist * 0.85).toFixed(2));
+      cell.style.animationDelay = (Math.random() * 0.6).toFixed(2) + "s";
+      root.appendChild(cell);
+      cells.push(cell);
+    }
+    return cells;
   }
 
   function run() {
     return new Promise((resolve) => {
-      const root = document.getElementById("loader-curve");
-      const wordEl = document.getElementById("loader-word");
-      if (!root) {
+      const grid = document.getElementById("loader-grid");
+      const deltaEl = document.getElementById("loader-delta");
+      if (!grid) {
         resolve();
         return;
       }
 
-      const { trace } = build(root);
-      const len = trace.getTotalLength();
-      trace.style.strokeDasharray = String(len);
-      trace.style.strokeDashoffset = String(len);
-      trace.getBoundingClientRect(); // force layout before the transition starts
+      const cells = build(grid);
 
-      requestAnimationFrame(() => {
-        trace.style.transition = "stroke-dashoffset " + DURATION + "ms cubic-bezier(.16,.84,.32,1)";
-        trace.style.strokeDashoffset = "0";
-        root.querySelectorAll(".lc-node").forEach((n) => n.classList.add("show"));
+      // randomized settle order, spread across most of the duration —
+      // a ripple with no fixed direction, not a sweep
+      const order = cells.map((_, i) => i);
+      for (let i = order.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+      }
+      order.forEach((cellIndex, k) => {
+        const t = (k / (order.length - 1)) * DURATION * 0.82;
+        setTimeout(() => cells[cellIndex].classList.add("settled"), t);
       });
 
-      if (wordEl) {
-        const step = DURATION / WORDS.length;
-        WORDS.forEach((word, i) => {
-          setTimeout(() => {
-            wordEl.classList.remove("pop");
-            void wordEl.offsetWidth; // restart the pop animation each swap
-            wordEl.textContent = word;
-            wordEl.classList.add("pop");
-          }, i * step);
-        });
+      if (deltaEl) {
+        const start = performance.now();
+        const startVal = 3 + Math.random() * 3.5;
+        (function tick(now) {
+          const p = Math.min(1, ((now || performance.now()) - start) / DURATION);
+          const eased = p * p; // accelerates toward zero, like settling
+          const val = startVal * (1 - eased);
+          deltaEl.textContent = val > 0.0005 ? val.toFixed(4) : "0.0000";
+          if (p < 1) requestAnimationFrame(tick);
+        })();
       }
 
       setTimeout(resolve, DURATION + SETTLE);
