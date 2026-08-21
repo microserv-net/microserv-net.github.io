@@ -1,26 +1,20 @@
 /* loader.js
    -----------------------------------------------------------------------
-   Not a spinner, not a typewriter story. A small preview of the site's
-   own trick: the same right-anchored C-curve that the real spine uses
-   (see render.js) draws itself here in miniature, with five nodes
-   lighting up as the trace reaches them, and a plain percentage readout
-   counting up alongside it. No narration, no jokes about the page itself
-   — just an instrument finishing a calibration pass before handing off.
+   Third pass. Now that the real spine is an alternating S-wave held near
+   centre (not a single right-anchored C), the loader previews that exact
+   shape in miniature: two arcs bowing opposite ways, drawn in one
+   continuous stroke, three nodes lighting up as the trace passes them.
+   No percentage counter this time, no narrated sentences — a single
+   status word swaps instantly (not typed) as each stage completes.
    ----------------------------------------------------------------------- */
 window.SpineLoader = (function () {
-  const W = 220, H = 320;
-  const RIGHT_X = 148, BULGE_X = 34;
-  const TOP_Y = 16, BOT_Y = H - 16;
-  const C1_Y = H * 0.2, C2_Y = H * 0.8;
-  const DURATION = 1900; // ms — the curve drawing itself
-  const SETTLE = 320; // ms pause once drawn, before handing off control
-
-  function bezierPoint(t) {
-    const mt = 1 - t;
-    const x = mt * mt * mt * RIGHT_X + 3 * mt * mt * t * BULGE_X + 3 * mt * t * t * BULGE_X + t * t * t * RIGHT_X;
-    const y = mt * mt * mt * TOP_Y + 3 * mt * mt * t * C1_Y + 3 * mt * t * t * C2_Y + t * t * t * BOT_Y;
-    return { x, y };
-  }
+  const W = 200, H = 300;
+  const CX = W / 2;
+  const TOP_Y = 18, MID_Y = H / 2, BOT_Y = H - 18;
+  const AMP = 44;
+  const DURATION = 1700; // ms — the S-wave drawing itself
+  const SETTLE = 300; // ms pause once drawn, before handing off control
+  const WORDS = ["curve", "signal", "spine", "ready"];
 
   function build(root) {
     root.innerHTML = "";
@@ -29,7 +23,11 @@ window.SpineLoader = (function () {
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     svg.setAttribute("aria-hidden", "true");
 
-    const d = `M ${RIGHT_X} ${TOP_Y} C ${BULGE_X} ${C1_Y}, ${BULGE_X} ${C2_Y}, ${RIGHT_X} ${BOT_Y}`;
+    // top -> mid bows left, mid -> bottom bows right: the same alternating
+    // logic as the real spine, just two segments instead of many
+    const d =
+      `M ${CX} ${TOP_Y} Q ${CX - AMP} ${(TOP_Y + MID_Y) / 2} ${CX} ${MID_Y} ` +
+      `Q ${CX + AMP} ${(MID_Y + BOT_Y) / 2} ${CX} ${BOT_Y}`;
 
     const rail = document.createElementNS(NS, "path");
     rail.setAttribute("class", "lc-rail");
@@ -41,16 +39,17 @@ window.SpineLoader = (function () {
     trace.setAttribute("d", d);
     svg.appendChild(trace);
 
-    // five nodes sampled along the same curve, timed to light up roughly
-    // as the drawing trace passes each one
-    [0.1, 0.32, 0.52, 0.7, 0.9].forEach((t) => {
-      const p = bezierPoint(t);
+    [
+      { x: CX, y: TOP_Y, delay: 0 },
+      { x: CX, y: MID_Y, delay: DURATION * 0.42 },
+      { x: CX, y: BOT_Y, delay: DURATION * 0.86 },
+    ].forEach((p) => {
       const c = document.createElementNS(NS, "circle");
       c.setAttribute("class", "lc-node");
       c.setAttribute("cx", String(p.x));
       c.setAttribute("cy", String(p.y));
-      c.setAttribute("r", "5");
-      c.style.transitionDelay = (t * DURATION * 0.85).toFixed(0) + "ms";
+      c.setAttribute("r", "5.5");
+      c.style.transitionDelay = p.delay.toFixed(0) + "ms";
       svg.appendChild(c);
     });
 
@@ -61,7 +60,7 @@ window.SpineLoader = (function () {
   function run() {
     return new Promise((resolve) => {
       const root = document.getElementById("loader-curve");
-      const pctEl = document.getElementById("loader-pct");
+      const wordEl = document.getElementById("loader-word");
       if (!root) {
         resolve();
         return;
@@ -79,13 +78,16 @@ window.SpineLoader = (function () {
         root.querySelectorAll(".lc-node").forEach((n) => n.classList.add("show"));
       });
 
-      if (pctEl) {
-        const start = performance.now();
-        (function tick(now) {
-          const p = Math.min(1, ((now || performance.now()) - start) / DURATION);
-          pctEl.textContent = String(Math.round(p * 100)).padStart(2, "0") + "%";
-          if (p < 1) requestAnimationFrame(tick);
-        })();
+      if (wordEl) {
+        const step = DURATION / WORDS.length;
+        WORDS.forEach((word, i) => {
+          setTimeout(() => {
+            wordEl.classList.remove("pop");
+            void wordEl.offsetWidth; // restart the pop animation each swap
+            wordEl.textContent = word;
+            wordEl.classList.add("pop");
+          }, i * step);
+        });
       }
 
       setTimeout(resolve, DURATION + SETTLE);
@@ -97,7 +99,7 @@ window.SpineLoader = (function () {
     if (!loader) return;
     document.body.classList.remove("loading");
     loader.classList.add("done");
-    setTimeout(() => loader.remove(), 950);
+    setTimeout(() => loader.remove(), 900);
   }
 
   return { run, finish };

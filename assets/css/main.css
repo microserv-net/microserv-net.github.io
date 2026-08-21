@@ -93,7 +93,8 @@ p{ margin:0; }
 }
 
 /* ==========================================================================
-   0. LOADER — a miniature of the site's own C-curve, drawing itself
+   0. LOADER — a miniature of the site's own alternating S-wave, drawing
+      itself, with a status word swapping instantly as each stage lands
    ========================================================================== */
 #loader{
   position:fixed; inset:0; z-index:9999;
@@ -106,7 +107,7 @@ p{ margin:0; }
 .loader-inner{
   display:flex; flex-direction:column; align-items:center; gap:18px;
 }
-.loader-curve-wrap{ width:min(200px, 46vw); height:min(300px, 56vh); }
+.loader-curve-wrap{ width:min(180px, 42vw); height:min(280px, 52vh); }
 .loader-curve-wrap svg{ width:100%; height:100%; overflow:visible; }
 .lc-rail{ fill:none; stroke:var(--line); stroke-width:2; }
 .lc-trace{
@@ -121,12 +122,17 @@ p{ margin:0; }
 .lc-node.show{
   opacity:1; transform:scale(1); fill:var(--signal); stroke:var(--signal);
 }
-.loader-readout{
-  display:flex; align-items:baseline; gap:12px;
-  font-family:var(--font-mono); letter-spacing:.08em; text-transform:uppercase;
+.loader-readout{ display:flex; align-items:center; justify-content:center; height:1.4em; }
+.lr-word{
+  font-family:var(--font-mono); font-size:13px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--signal); opacity:0; transform:scale(.85) translateY(4px);
 }
-.lr-label{ font-size:11.5px; color:var(--fg-dim); }
-.lr-pct{ font-size:15px; color:var(--signal); min-width:3.4ch; text-align:right; }
+.lr-word.pop{ animation:wordPop .4s var(--ease-spine) forwards; }
+@keyframes wordPop{
+  0%{ opacity:0; transform:scale(.85) translateY(4px); }
+  60%{ opacity:1; transform:scale(1.06) translateY(0); }
+  100%{ opacity:1; transform:scale(1) translateY(0); }
+}
 
 /* ==========================================================================
    1. TOP BAR
@@ -275,15 +281,18 @@ body.no-hijack #spine-stage{
 }
 .spine-node.active{ fill:var(--accent); }
 
-/* The curve's own right anchor sits around ~70% of viewport width and
-   bulges left — the tag lives in the open space further left of that,
-   near the true left margin, regardless of how far any given card leans. */
+/* The curve now stays close to the centreline (it bows at most ~90px
+   either way — see AMPLITUDE in render.js), and each card sits opposite
+   whichever way the curve bows near it. The tag sits on the SAME side as
+   the curve's bow, a fixed distance from centre that comfortably clears
+   the widest possible bow — so tag and card always land on opposite
+   sides of the spine, symmetric around it. */
 .vertebra-tag{
-  position:fixed; left:clamp(20px, 6vw, 96px); z-index:6;
-  transform:translateY(-50%);
+  position:fixed; left:calc(50% - 190px); z-index:6;
+  transform:translate(-100%, -50%);
   top:50%;
   font-family:var(--font-mono);
-  text-align:left;
+  text-align:right;
   opacity:0; transition:opacity .5s ease, transform .5s var(--ease-spine);
   pointer-events:none;
 }
@@ -301,6 +310,20 @@ body.no-hijack #spine-stage{
   transition:transform .4s var(--ease-spine);
 }
 .vertebra-tag.show .vt-nerve{ transform:translateY(-50%) scaleX(1); }
+
+/* side-left (the default above) puts the tag left of centre, text
+   right-aligned, nerve reaching rightward toward the spine — this mirrors
+   it for vertebrae whose card leans left, so the tag sits on the right. */
+.vertebra-tag.side-right{
+  left:auto; right:calc(50% - 190px);
+  transform:translate(100%, -50%);
+  text-align:left;
+}
+.vertebra-tag.side-right .vt-nerve{
+  right:auto; left:-46px;
+  background:linear-gradient(to left, var(--accent), transparent);
+  transform-origin:right;
+}
 
 @media (max-width: 900px){
   .vertebra-tag{ display:none; }

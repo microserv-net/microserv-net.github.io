@@ -5,19 +5,24 @@
    Every frame, "current" eases toward "target" (lerp), and every card is
    given a transform of rotateY(relativeAngle) translateZ(radius) — i.e.
    each card sits on the surface of a drum whose axis is the curved spine
-   line rendered on screen. As current changes,
-   the whole drum appears to revolve around that line, continuously,
-   in lockstep with the input — not a slide-to-the-next-slot snap.
-   The card nearest angle 0 is the one facing the viewer: full opacity,
-   full scale, in focus. Neighbours recede in opacity/blur/scale with
-   their angular distance, exactly like looking at a rotating cylinder
-   from a fixed camera.
+   line rendered on screen. As current changes, the whole drum appears to
+   revolve around that line, continuously, in lockstep with the input —
+   not a slide-to-the-next-slot snap. The card nearest angle 0 is the one
+   facing the viewer: full opacity, full scale, in focus. Neighbours
+   recede in opacity/blur/scale with their angular distance, exactly like
+   looking at a rotating cylinder from a fixed camera.
 
-   Every card also carries the same fixed rightward offset (computed in
-   computeRadius() below), so it settles into the open space the C-curve
-   leaves on the right rather than sitting dead-centre. That offset is
-   applied as the outermost transform, in screen space, so it stays a
-   clean, constant placement no matter how the card is currently rotated.
+   Each card also carries a fixed left/right offset (data-lean, set by
+   render.js from the curve's own shape — see buildSpine there) so it
+   sits on the inner side of the nearby bow in the spine rather than
+   dead-centre. That offset is applied via the element's `left` — a plain
+   layout property, resolved BEFORE any transform/perspective math runs —
+   rather than folded into the 3D `transform` string. That distinction
+   matters: translateZ() puts the card inside a perspective projection,
+   and any translateX() living in that same transform gets magnified by
+   that projection (elements pushed toward the camera end up displaced
+   far more than the raw pixel value suggests). Doing the lean as `left`
+   sidesteps that entirely and keeps the offset exactly what it says.
    ----------------------------------------------------------------------- */
 window.SpineEngine = (function () {
   function create(opts) {
@@ -33,10 +38,10 @@ window.SpineEngine = (function () {
 
     const N = cards.length;
     const SEGMENT = 52; // degrees between adjacent slots on the drum
+    const leans = cards.map((c) => parseFloat(c.dataset.lean || "0") || 0); // -1, 0, or 1 per card
     let target = 0;
     let current = 0;
     let radius = 620;
-    let cardOffsetPx = 0; // shared rightward offset — see computeRadius()
     let spineLength = 0;
     let raf = null;
 
@@ -44,18 +49,22 @@ window.SpineEngine = (function () {
       const w = window.innerWidth;
       radius = Math.max(300, Math.min(680, w * 0.34));
 
-      // Mirrors --card-w: min(500px, 78vw) in main.css. The curve's own
-      // right anchor sits at ~70% of viewport width (see render.js), so
-      // aim the card a bit further right than that, clamped so it never
-      // runs off-screen and never gets pushed left of true centre.
+      // Mirrors --card-w: min(500px, 78vw) in main.css. maxLean is a
+      // provable bound: centreX = 50% ± leanPx, and leanPx never exceeds
+      // half the viewport minus half the card minus a margin, so the
+      // card's far edge can never pass the viewport edge on either side —
+      // this is what actually fixes the overflow (see comment above on
+      // why the old translateX-based approach couldn't guarantee that).
       const cardW = Math.min(500, w * 0.78);
       const cardHalf = cardW / 2;
-      const margin = 28;
-      const desiredCenterX = w * 0.82;
-      const maxCenterX = w - cardHalf - margin;
-      const minCenterX = w * 0.5;
-      const centerX = Math.max(minCenterX, Math.min(maxCenterX, desiredCenterX));
-      cardOffsetPx = centerX - w * 0.5;
+      const margin = 24;
+      const maxLean = Math.max(0, w / 2 - cardHalf - margin);
+      const desiredLean = Math.min(200, w * 0.15);
+      const leanPx = Math.min(desiredLean, maxLean);
+
+      cards.forEach((card, i) => {
+        card.style.left = "calc(50% + " + (leans[i] * leanPx).toFixed(1) + "px)";
+      });
     }
     computeRadius();
 
@@ -149,7 +158,6 @@ window.SpineEngine = (function () {
         const bob = Math.sin(rad) * 16;
 
         card.style.transform =
-          "translateX(" + cardOffsetPx.toFixed(1) + "px) " +
           "translate(-50%,-50%) rotateY(" + rel.toFixed(2) + "deg) " +
           "translateZ(" + radius + "px) translateY(" + bob.toFixed(1) + "px) " +
           "scale(" + scale.toFixed(3) + ")";
