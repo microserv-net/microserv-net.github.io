@@ -15,13 +15,13 @@
    every frame). Scrolling back up runs the exact same motion in reverse.
 
    Each card's LEFT/RIGHT position is fixed per-card (data-lean, set by
-   render.js from the curve's own shape) and applied via the element's
-   `left` — a plain layout property — rather than a transform, so there's
-   no perspective/rotation math left to interact with it at all. The
-   card's near edge is deliberately let overlap the centreline by a fixed
-   amount (see computeLean() below) so the curve's endpoint disappears
-   behind the card's opaque background as it arrives — the "piercing"
-   look — rather than the two staying politely clear of one another.
+   render.js) and applied via the element's `left` — a plain layout
+   property — rather than a transform, so there's no perspective/rotation
+   math left to interact with it at all. Cards sit close to the viewport
+   edges (see computeLean() below), and the curve (render.js buildSpine)
+   is built to swing out and reach toward each card's exact position in
+   turn — so the curve's own endpoint disappears behind the card's opaque
+   background as it arrives, reading as the line piercing into the card.
    ----------------------------------------------------------------------- */
 window.SpineEngine = (function () {
   function create(opts) {
@@ -46,24 +46,15 @@ window.SpineEngine = (function () {
       // Mirrors --card-w: min(500px, 78vw) in main.css.
       const cardW = Math.min(500, w * 0.78);
       const cardHalf = cardW / 2;
-      const overlap = 36; // how far the card's near edge reaches PAST centre
       const edgeMargin = 24; // gap between the card's outer edge and the viewport edge
 
-      // Unlike the earlier version, this is not trying to keep the card
-      // clear of the curve — it's the opposite. The card is meant to sit
-      // close enough to centre that its near edge overlaps where the
-      // curve's own endpoint lives, so the curve's opaque z-order neighbour
-      // (the card) hides that last stretch of it — the "piercing" look.
-      // See buildSpine() in render.js for the matching curve-side comment.
+      // Cards sit close to the viewport edges — wide apart, not just a
+      // small offset from centre — leaving the curve real room to swing
+      // from one card's territory to the next (see buildSpine() in
+      // render.js, which mirrors this exact formula so the two agree).
       let leanPx = 0;
-      if (w >= 1000) {
-        // Below this width there isn't enough room for a 500px-capped
-        // card to sit off-centre at all without going off-screen — see
-        // the main.css comment on .spine-line-wrap for the matching
-        // breakpoint, below which the curve is hidden entirely.
-        const desiredLean = Math.max(0, cardHalf - overlap);
-        const maxLean = Math.max(0, w / 2 - cardHalf - edgeMargin);
-        leanPx = Math.min(desiredLean, maxLean);
+      if (w >= 640) {
+        leanPx = Math.max(0, w / 2 - cardHalf - edgeMargin);
       }
 
       cards.forEach((card, i) => {

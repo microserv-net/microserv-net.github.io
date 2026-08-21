@@ -277,18 +277,17 @@ body.no-hijack #spine-stage{
   fill:var(--accent); stroke:var(--void); stroke-width:2;
   opacity:0; transition:opacity .3s ease;
 }
-/* Below 1000px there isn't room for a 500px-capped card to sit off-centre
+/* Below 640px there isn't room for a 500px-capped card to sit off-centre
    at all without going off-screen (see computeLean() in spine-engine.js,
    which stops offsetting cards at this width too) — so the curve just
    isn't shown; a curve nothing sits near to pierce would look stray. */
-@media (max-width: 999px){
+@media (max-width: 639px){
   .spine-line-wrap{ display:none; }
 }
 
-/* Each card sits opposite whichever way its nearby arc bows. The tag
-   sits on the SAME side as the curve's bow, a fixed distance from centre
-   that comfortably clears the widest possible bow — so tag and card
-   always land on opposite sides of the spine, symmetric around it. */
+/* Each card sits where its nearby arc swings toward. The tag sits a
+   fixed distance from centre, clear of both — always closer to the
+   middle than either card gets, since cards are pushed toward the edges. */
 .vertebra-tag{
   position:fixed; left:calc(50% - 190px); z-index:6;
   transform:translate(-100%, -50%);
@@ -327,7 +326,7 @@ body.no-hijack #spine-stage{
   transform-origin:right;
 }
 
-@media (max-width: 999px){
+@media (max-width: 639px){
   .vertebra-tag{ display:none; }
 }
 

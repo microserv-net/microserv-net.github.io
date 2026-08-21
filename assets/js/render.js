@@ -174,23 +174,22 @@ window.SpineRender = (function () {
 
   // ---- spine SVG: ONE arc visible at a time, tied to the current scroll
   // transition ---------------------------------------------------------
-  // Earlier versions drew the whole page's worth of curve at once. Instead:
-  // each transition between one vertebra and the next gets its own arc (a
-  // simple bow, left or right), all pre-built but only ONE shown at a
-  // time — whichever transition is currently under the scroll position.
-  // Moving to the next vertebra swaps in the mirrored arc on the opposite
-  // side, so the line reads as crawling left-right-left like a snake as
-  // you scroll (see spine-engine.js, which calls setProgress(current)
-  // every frame). Before any scrolling, only the top node is visible —
-  // a single dot, nothing traced yet — same as Thermite's "ignition".
+  // Each transition between one vertebra and the next gets its own S-arc,
+  // all pre-built but only ONE shown at a time — whichever transition is
+  // currently under the scroll position (see setProgress below, called
+  // every frame from spine-engine.js). Before any scrolling, only the top
+  // node is visible — a single dot, nothing traced yet, same as
+  // Thermite's "ignition".
   //
-  // Every vertebra's card sits on the side OPPOSITE whichever way its
-  // neighbouring arc bows (slot.lean, set here). The card's near edge is
-  // allowed to sit slightly past the centreline on purpose — see
-  // computeLean() in spine-engine.js — so the curve's own endpoint
-  // disappears behind the card's opaque background as it arrives,
-  // reading as the line piercing into the card rather than politely
-  // stopping short of it.
+  // The arc is built to actually reach the card at each end — it swings
+  // from centre out toward the outgoing card's position in its top half,
+  // back through centre, then out toward the incoming card's position in
+  // its bottom half. Cards sit close to the viewport edges (see
+  // computeLean() in spine-engine.js, mirrored here so the two always
+  // agree), so this is a real cross-screen swing, not a small bow — and
+  // because a card is opaque and painted above the curve, the curve's
+  // reach toward it visually disappears behind it: the line piercing
+  // into the card, not stopping short of it.
   function buildSpine(wrapEl, slots) {
     wrapEl.innerHTML = "";
     const NS = "http://www.w3.org/2000/svg";
@@ -199,16 +198,13 @@ window.SpineRender = (function () {
 
     const N = slots.length;
     const segCount = Math.max(0, N - 1);
-    const startPhase = Math.random() < 0.5 ? 1 : -1; // which way segment 0 bows, per load
+    const startPhase = Math.random() < 0.5 ? 1 : -1; // which side vertebra 0 sits on, per load
 
-    // the side segment i (between vertebra i and vertebra i+1) bows toward
-    function bowSide(i) {
-      return (i % 2 === 0 ? 1 : -1) * startPhase;
-    }
-
-    // assign each vertebra's card to the opposite side once, up front
+    // Cards alternate sides, plain and simple — the curve below is built
+    // FROM these same positions, so it always swings toward wherever the
+    // outgoing/incoming card actually is.
     slots.forEach((slot, i) => {
-      slot.lean = -bowSide(Math.min(i, Math.max(0, segCount - 1)));
+      slot.lean = (i % 2 === 0 ? 1 : -1) * startPhase;
     });
 
     const segPaths = [];
@@ -241,16 +237,26 @@ window.SpineRender = (function () {
       const yBot = h * BAND_BOTTOM;
       const midY = (yTop + yBot) / 2;
 
-      // A clearly visible bow — this is the whole visual now, so it can
-      // be bold. Capped so it never runs the arc itself off-screen.
-      let amplitude = w * 0.2;
-      amplitude = Math.min(amplitude, 300);
-      amplitude = Math.min(amplitude, w / 2 - 56);
-      amplitude = Math.max(amplitude, 56);
+      // Mirrors computeLean() in spine-engine.js exactly — same formula,
+      // same breakpoint — so the curve swings out to precisely where
+      // each card sits rather than an independent guess at it.
+      const cardW = Math.min(500, w * 0.78);
+      const cardHalf = cardW / 2;
+      const edgeMargin = 24;
+      const leanPx = w >= 640 ? Math.max(0, w / 2 - cardHalf - edgeMargin) : 0;
+
+      // Where the curve reaches its closest approach to each card,
+      // vertically — inside the card's own vertical span, not just at
+      // the band's extreme top/bottom edges.
+      const upperY = yTop + (midY - yTop) * 0.6;
+      const lowerY = midY + (yBot - midY) * 0.4;
 
       segPaths.forEach((p, i) => {
-        const bow = bowSide(i);
-        const d = `M ${cx} ${yTop} Q ${cx + bow * amplitude} ${midY} ${cx} ${yBot}`;
+        const xFrom = cx + (slots[i].lean || 0) * leanPx;
+        const xTo = cx + (slots[i + 1].lean || 0) * leanPx;
+        const d =
+          `M ${cx} ${yTop} Q ${xFrom} ${upperY} ${cx} ${midY} ` +
+          `Q ${xTo} ${lowerY} ${cx} ${yBot}`;
         p.setAttribute("d", d);
         segLens[i] = p.getTotalLength();
         p.style.strokeDasharray = String(segLens[i]);
