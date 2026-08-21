@@ -174,18 +174,23 @@ window.SpineRender = (function () {
 
   // ---- spine SVG: ONE arc visible at a time, tied to the current scroll
   // transition ---------------------------------------------------------
-  // Earlier versions drew the whole page's worth of curve at once, which
-  // meant it could visually cross behind a card. Instead: each transition
-  // between one vertebra and the next gets its own arc (a simple bow, left
-  // or right), all pre-built but only ONE shown at a time — whichever
-  // transition is currently under the scroll position. Moving to the next
-  // vertebra swaps in the mirrored arc on the opposite side. The engine
-  // calls setProgress(current) every frame so the visible arc traces in
-  // (or retraces out) exactly with scroll direction — see spine-engine.js.
+  // Earlier versions drew the whole page's worth of curve at once. Instead:
+  // each transition between one vertebra and the next gets its own arc (a
+  // simple bow, left or right), all pre-built but only ONE shown at a
+  // time — whichever transition is currently under the scroll position.
+  // Moving to the next vertebra swaps in the mirrored arc on the opposite
+  // side, so the line reads as crawling left-right-left like a snake as
+  // you scroll (see spine-engine.js, which calls setProgress(current)
+  // every frame). Before any scrolling, only the top node is visible —
+  // a single dot, nothing traced yet — same as Thermite's "ignition".
   //
   // Every vertebra's card sits on the side OPPOSITE whichever way its
-  // neighbouring arc bows, so card and curve are never on the same side
-  // (slot.lean is set here, read by buildCards/buildTags below).
+  // neighbouring arc bows (slot.lean, set here). The card's near edge is
+  // allowed to sit slightly past the centreline on purpose — see
+  // computeLean() in spine-engine.js — so the curve's own endpoint
+  // disappears behind the card's opaque background as it arrives,
+  // reading as the line piercing into the card rather than politely
+  // stopping short of it.
   function buildSpine(wrapEl, slots) {
     wrapEl.innerHTML = "";
     const NS = "http://www.w3.org/2000/svg";
@@ -295,8 +300,13 @@ window.SpineRender = (function () {
           p.style.opacity = "0";
         }
       });
+
+      // nodeTop is the "ignition" dot — where this transition starts, and
+      // the only thing visible before any scrolling happens (frac 0).
+      // nodeBot only appears as the trace actually arrives there, fading
+      // in with frac rather than sitting there the whole time.
       nodeTop.style.opacity = "1";
-      nodeBot.style.opacity = "1";
+      nodeBot.style.opacity = String(frac);
       nodeTop.style.transform = "translateY(" + drift + ")";
       nodeBot.style.transform = "translateY(" + drift + ")";
     }

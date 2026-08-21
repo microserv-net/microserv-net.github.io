@@ -278,11 +278,11 @@ body.no-hijack #spine-stage{
   fill:var(--accent); stroke:var(--void); stroke-width:2;
   opacity:0; transition:opacity .3s ease;
 }
-/* Below 1120px there isn't room for a card to clear the centreline with a
-   comfortable margin (see computeLean() in spine-engine.js, which also
-   stops offsetting cards at this width) — so the curve just isn't shown;
-   showing a curve nothing sits opposite to would be worse than no curve. */
-@media (max-width: 1119px){
+/* Below 1000px there isn't room for a 500px-capped card to sit off-centre
+   at all without going off-screen (see computeLean() in spine-engine.js,
+   which stops offsetting cards at this width too) — so the curve just
+   isn't shown; a curve nothing sits near to pierce would look stray. */
+@media (max-width: 999px){
   .spine-line-wrap{ display:none; }
 }
 
@@ -328,7 +328,7 @@ body.no-hijack #spine-stage{
   transform-origin:right;
 }
 
-@media (max-width: 1119px){
+@media (max-width: 999px){
   .vertebra-tag{ display:none; }
 }
 
