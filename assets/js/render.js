@@ -227,7 +227,19 @@ window.SpineRender = (function () {
     wrapEl.appendChild(svg);
 
     let segLens = [];
+    let bandHeight = 0;
+    let baseYTop = 0;
 
+    // Each segment i is built in an ABSOLUTE coordinate space that keeps
+    // going downward forever (segment i's top = segment i-1's bottom,
+    // exactly, no gap) rather than every segment reusing the same
+    // [yTop, yBot] band. setProgress() below then applies a drift of
+    // exactly -current*bandHeight, which is precisely the amount needed
+    // to bring whichever segment is active back into the visible band —
+    // so the transition from one arc to the next lines up perfectly:
+    // the outgoing arc's endpoint and the incoming arc's start point
+    // land on the exact same screen pixel at the moment they swap,
+    // instead of the incoming one popping back to the top of the band.
     function layout() {
       const w = window.innerWidth;
       const h = wrapEl.clientHeight || window.innerHeight;
@@ -235,7 +247,8 @@ window.SpineRender = (function () {
       const cx = w / 2;
       const yTop = h * BAND_TOP;
       const yBot = h * BAND_BOTTOM;
-      const midY = (yTop + yBot) / 2;
+      bandHeight = yBot - yTop;
+      baseYTop = yTop;
 
       // Mirrors computeLean() in spine-engine.js exactly — same formula,
       // same breakpoint — so "where each card sits" agrees between files.
@@ -254,26 +267,28 @@ window.SpineRender = (function () {
       const peakOffset = Math.max(0, leanPx - (0.5 - pierceFrac) * cardW);
       const controlOffset = peakOffset * 2;
 
-      // Where the curve reaches its closest approach to each card,
-      // vertically — inside the card's own vertical span, not just at
-      // the band's extreme top/bottom edges.
-      const upperY = yTop + (midY - yTop) * 0.6;
-      const lowerY = midY + (yBot - midY) * 0.4;
-
       segPaths.forEach((p, i) => {
+        const segTop = yTop + i * bandHeight;
+        const segBot = segTop + bandHeight;
+        const segMid = (segTop + segBot) / 2;
+        // where the curve reaches its closest approach to each card,
+        // vertically — inside the card's own vertical span
+        const upperY = segTop + (segMid - segTop) * 0.6;
+        const lowerY = segMid + (segBot - segMid) * 0.4;
+
         const xFrom = cx + (slots[i].lean || 0) * controlOffset;
         const xTo = cx + (slots[i + 1].lean || 0) * controlOffset;
         const d =
-          `M ${cx} ${yTop} Q ${xFrom} ${upperY} ${cx} ${midY} ` +
-          `Q ${xTo} ${lowerY} ${cx} ${yBot}`;
+          `M ${cx} ${segTop} Q ${xFrom} ${upperY} ${cx} ${segMid} ` +
+          `Q ${xTo} ${lowerY} ${cx} ${segBot}`;
         p.setAttribute("d", d);
         segLens[i] = p.getTotalLength();
         p.style.strokeDasharray = String(segLens[i]);
       });
 
       nodeTop.setAttribute("cx", String(cx));
-      nodeTop.setAttribute("cy", String(yTop));
       nodeBot.setAttribute("cx", String(cx));
+      nodeTop.setAttribute("cy", String(yTop));
       nodeBot.setAttribute("cy", String(yBot));
     }
 
@@ -293,14 +308,10 @@ window.SpineRender = (function () {
       const segIndex = Math.max(0, Math.min(segCount - 1, Math.floor(current)));
       const frac = Math.max(0, Math.min(1, current - segIndex));
 
-      // Driven by "current" (the whole-journey scroll position) rather
-      // than "frac" (progress within just this one segment) — frac would
-      // reset to 0 at every segment boundary, making the line visibly
-      // snap back each time a new arc took over. Tying it to current
-      // instead means the drift accumulates continuously across the
-      // entire scroll, the same way the cards never "reset" either: one
-      // unbroken upward motion, not N separate ones stitched together.
-      const drift = (-current * 22).toFixed(1) + "px";
+      // Exactly cancels each segment's i*bandHeight downward offset once
+      // it becomes active (see layout() above) — this is what makes
+      // consecutive arcs meet edge-to-edge instead of jumping.
+      const drift = (-current * bandHeight).toFixed(1) + "px";
 
       segPaths.forEach((p, i) => {
         if (i === segIndex) {
@@ -316,7 +327,12 @@ window.SpineRender = (function () {
       // nodeTop is the "ignition" dot — where this transition starts, and
       // the only thing visible before any scrolling happens (frac 0).
       // nodeBot only appears as the trace actually arrives there, fading
-      // in with frac rather than sitting there the whole time.
+      // in with frac rather than sitting there the whole time. Both track
+      // the currently active segment's own (undrifted) top/bottom.
+      const segTop = baseYTop + segIndex * bandHeight;
+      const segBot = segTop + bandHeight;
+      nodeTop.setAttribute("cy", String(segTop));
+      nodeBot.setAttribute("cy", String(segBot));
       nodeTop.style.opacity = "1";
       nodeBot.style.opacity = String(frac);
       nodeTop.style.transform = "translateY(" + drift + ")";

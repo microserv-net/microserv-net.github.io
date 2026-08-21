@@ -392,7 +392,12 @@ body.no-hijack #spine-stage{
 }
 
 /* ---- Hero (C1) ---- */
-.hero-face{ text-align:left; background:transparent; border:none; box-shadow:none; padding:0; max-height:none; }
+/* Opaque (matching the page background exactly, so no visible "box"
+   appears) rather than transparent — the hero still reads as text
+   floating free with no card panel, but now actually hides the curve
+   behind it like every other card does, instead of the curve showing
+   straight through. */
+.hero-face{ text-align:left; background:var(--bg); border:none; box-shadow:none; padding:0; max-height:none; }
 .hero-title{
   font-size:clamp(1.9rem, 5vw, 3.2rem);
   line-height:1.05;
