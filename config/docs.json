@@ -1,0 +1,23 @@
+{
+  "_comment": "Each entry becomes a page at docs.html?doc=<slug>. 'source' can be a path relative to the site root (the .md file can live anywhere in this repo -- it does not need to sit next to this config) OR a full https:// URL to a raw markdown file (e.g. a raw.githubusercontent.com link into a completely different repository). These pages are plain documentation reads: no spine, no rotation, just the doc with the site's chrome (top bar + theme) around it.",
+
+  "pages": [
+    {
+      "slug": "thermite-architecture",
+      "title": "Thermite -- Architecture",
+      "description": "How Thermite avoids running a backend of its own.",
+      "source": "docs/sample-project/README.md",
+      "project": "thermite-web",
+      "category": "Architecture"
+    },
+
+    {
+      "slug": "_example-external-doc",
+      "title": "Example: doc pulled from another repo (replace or delete me)",
+      "description": "Shows that 'source' can point anywhere, including outside this repository.",
+      "source": "https://raw.githubusercontent.com/<owner>/<other-repo>/main/README.md",
+      "project": "",
+      "category": "Example"
+    }
+  ]
+}

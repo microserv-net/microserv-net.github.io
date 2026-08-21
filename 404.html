@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>404 — off the spine</title>
+<meta name="color-scheme" content="dark light" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%2306080B'/%3E%3Ccircle cx='12' cy='5' r='2.1' fill='%235FD0FF'/%3E%3Ccircle cx='12' cy='12' r='2.1' fill='%235FD0FF'/%3E%3Ccircle cx='12' cy='19' r='2.1' fill='%235FD0FF'/%3E%3Cpath d='M12 7v3M12 14v3' stroke='%235FD0FF' stroke-width='1.4'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{ --void:#06080B; --bone:#F5F3EC; --signal:#5FD0FF; --line:rgba(245,243,236,.14); }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    background:var(--void); color:var(--bone);
+    font-family:"Inter",system-ui,sans-serif;
+    display:flex; align-items:center; justify-content:center;
+    text-align:center; padding:24px;
+  }
+  .wrap{ max-width:520px; }
+  .tag{
+    font-family:"JetBrains Mono",monospace; font-size:12.5px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--signal); margin-bottom:18px;
+  }
+  h1{ font-family:"Space Grotesk",sans-serif; font-size:clamp(2rem,7vw,3rem); margin:0 0 16px; }
+  p{ color:#B9C1CC; line-height:1.6; margin:0 0 30px; }
+  a.btn{
+    display:inline-flex; align-items:center; gap:8px; padding:12px 24px; border-radius:100px;
+    background:var(--signal); color:var(--void); text-decoration:none;
+    font-family:"JetBrains Mono",monospace; font-size:13px;
+  }
+  .verts{ display:flex; gap:8px; justify-content:center; margin-bottom:26px; }
+  .verts span{ width:10px; height:10px; border-radius:50%; background:var(--line); }
+  .verts span:nth-child(3){ background:#FF6A3D; box-shadow:0 0 10px #FF6A3D; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="verts"><span></span><span></span><span></span><span></span><span></span></div>
+    <p class="tag">vertebra not found</p>
+    <h1>You've fallen off the spine.</h1>
+    <p>Whatever you were looking for isn't at this address. It happens — even a
+       nervous system misfires sometimes.</p>
+    <a class="btn" href="index.html">&larr; back to C1</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Docs</title>
+<meta name="color-scheme" content="dark light" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%2306080B'/%3E%3Ccircle cx='12' cy='5' r='2.1' fill='%235FD0FF'/%3E%3Ccircle cx='12' cy='12' r='2.1' fill='%235FD0FF'/%3E%3Ccircle cx='12' cy='19' r='2.1' fill='%235FD0FF'/%3E%3Cpath d='M12 7v3M12 14v3' stroke='%235FD0FF' stroke-width='1.4'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/css/main.css" />
+</head>
+<body class="docs-mode">
+
+<header id="topbar" style="animation:none; transform:translateY(0);">
+  <a class="brand" href="index.html">
+    <span class="brand-mark">
+      <svg viewBox="0 0 30 38" aria-hidden="true">
+        <line x1="15" y1="6" x2="15" y2="32" stroke="var(--border)" stroke-width="2"/>
+        <circle class="bm-dot" cx="15" cy="6" r="3" fill="var(--signal)"/>
+        <circle class="bm-dot" cx="15" cy="19" r="3" fill="var(--signal)"/>
+        <circle class="bm-dot" cx="15" cy="32" r="3" fill="var(--signal)"/>
+      </svg>
+    </span>
+    <span class="brand-word">d33p<b>ster</b></span>
+  </a>
+  <nav id="primary-nav" aria-label="Primary">
+    <a class="nav-link" href="index.html">Back to the spine</a>
+  </nav>
+  <div class="topbar-controls">
+    <div class="theme-switch" id="theme-switch" role="group" aria-label="Theme">
+      <span class="switch-pill" aria-hidden="true"></span>
+      <button type="button" data-mode="auto" title="Auto (by your timezone)">A</button>
+      <button type="button" data-mode="light" title="Light" aria-label="Light theme">&#9728;</button>
+      <button type="button" data-mode="dark" title="Dark" aria-label="Dark theme">&#9789;</button>
+    </div>
+    <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="docs-shell">
+  <a class="docs-back" href="index.html">&larr; back to the spine</a>
+  <p class="docs-eyebrow" id="docs-eyebrow">documentation</p>
+  <h1 class="docs-title" id="docs-title">Loading…</h1>
+  <p class="docs-desc" id="docs-desc"></p>
+  <div class="docs-body" id="docs-body"></div>
+
+  <div class="docs-index">
+    <h4>Other pages</h4>
+    <ul id="docs-index-list"></ul>
+  </div>
+</div>
+
+<script src="assets/js/vendor/marked.umd.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/topbar.js"></script>
+<script src="assets/js/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+{
+  "brand": {
+    "name": "d33pster",
+    "displayName": "d33p0st",
+    "tagline": "I build the things a sane roadmap wouldn't schedule.",
+    "subtagline": "Systems, compilers, and other reactions I probably shouldn't have started.",
+    "handle": "@d33pster"
+  },
+
+  "contact": {
+    "_comment": "Where 'Submit an idea and I'll build it' goes. If ideaFormEndpoint is left empty, the site opens the visitor's email client via a pre-filled mailto: link to ideaEmail — this works with zero setup on GitHub Pages. If you set up a form relay (e.g. https://formspree.io) and paste its endpoint below, the site will POST there instead and the visitor never leaves the page. See README.md > 'Wiring the idea form' for exact steps.",
+    "ideaEmail": "d33p0st@gmail.com",
+    "ideaFormEndpoint": ""
+  },
+
+  "payments": {
+    "_comment": "Used by the 'Sponsor this project' panel on every project card. No backend is involved — these are just the destinations the panel builds links/QR codes for.",
+    "paypal": {
+      "email": "deep.main.ac@gmail.com",
+      "username": "d33pster",
+      "paypalMeHandle": "d33pster"
+    },
+    "upi": {
+      "vpa": "7903202747@slc",
+      "payeeName": "Deepster"
+    },
+    "suggestedAmountsUSD": [5, 15, 50],
+    "suggestedAmountsINR": [200, 500, 1500]
+  },
+
+  "theme": {
+    "_comment": "Auto mode reads the visitor's IANA timezone (Intl API) and picks day/night by local clock hour, then a manual 3-way toggle (Auto / Light / Dark) in the top bar can override it. The override is remembered per-browser.",
+    "autoByTimezone": true,
+    "dayStartHour": 7,
+    "nightStartHour": 19
+  },
+
+  "social": [
+    { "label": "GitHub", "url": "https://github.com/d33pster" },
+    { "label": "Email", "url": "mailto:d33p0st@gmail.com" }
+  ]
+}

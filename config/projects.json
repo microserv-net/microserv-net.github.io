@@ -1,0 +1,45 @@
+{
+  "_comment": "Add/remove projects freely — the site re-renders from this file on every load, nothing else needs touching. Set 'featured': true on the ones that should get a large vertebra of their own; the rest render together in the compact 'T-series' index card. Order in this array is the order they rotate past on the spine.",
+
+  "featured": ["thermite-web"],
+
+  "projects": [
+    {
+      "id": "thermite-web",
+      "name": "Thermite",
+      "tagline": "Cloud Rust compiler with no application server.",
+      "description": "Fe2O3 + 2Al -> Al2O3 + 2Fe + heat. Compiles Rust on GitHub's own hosted runners, in your account, on your quota, and hands you a binary for any of eleven targets -- optionally sealed end to end with a key only you hold. The site itself is a static page with no backend of its own.",
+      "url": "https://github.com/microserv-net/thermite-web",
+      "demoUrl": "https://microservices.net.in/thermite-web/",
+      "tags": ["rust", "github-actions", "no-backend", "wasm"],
+      "status": "active",
+      "sponsorable": true,
+      "docs": "thermite-architecture"
+    },
+
+    {
+      "id": "_example-project",
+      "name": "Example Project (replace or delete me)",
+      "tagline": "One line describing what it does and why it exists.",
+      "description": "A longer description shown on the project's own vertebra when it is marked featured, or in the compact index otherwise. Plain text or simple sentences are safest -- this is rendered as-is, no markdown parsing here (use the docs system below for long-form writeups).",
+      "url": "https://github.com/d33pster/example-project",
+      "demoUrl": "",
+      "tags": ["example", "delete-me"],
+      "status": "wip",
+      "sponsorable": true,
+      "docs": ""
+    }
+  ],
+
+  "patents": [
+    {
+      "id": "_example-patent",
+      "title": "Example Patent Title (replace or delete me)",
+      "number": "US 00/000,000",
+      "status": "filed",
+      "filedDate": "2026-01-01",
+      "abstract": "One or two sentences on what the patent covers. Shown as-is on the L-series (lumbar) vertebra.",
+      "url": ""
+    }
+  ]
+}
