@@ -2,32 +2,22 @@
    -----------------------------------------------------------------------
    No native scrollbar. Instead: wheel / trackpad gesture / touch drag /
    arrow keys accumulate into a single float "target" (in slot units).
-   Every frame, "current" eases toward "target" (lerp), and every card is
-   given a transform of rotateY(relativeAngle) translateZ(radius) — i.e.
-   each card sits on the surface of a drum whose axis is the curved spine
-   line rendered on screen. As current changes, the whole drum appears to
-   revolve around that line, continuously, in lockstep with the input —
-   not a slide-to-the-next-slot snap. The card nearest angle 0 is the one
-   facing the viewer: full opacity, full scale, in focus. Neighbours
-   recede in opacity/blur/scale with their angular distance, exactly like
-   looking at a rotating cylinder from a fixed camera.
+   Every frame, "current" eases toward "target" (lerp).
 
-   Each card also carries a fixed left/right offset (data-lean, set by
-   render.js from the curve's own shape — see buildSpine there) so it
-   sits on the inner side of the nearby bow in the spine rather than
-   dead-centre. That offset is applied via the element's `left` — a plain
-   layout property, resolved BEFORE any transform/perspective math runs —
-   rather than folded into the 3D `transform` string. That distinction
-   matters: translateZ() puts the card inside a perspective projection,
-   and any translateX() living in that same transform gets magnified by
-   that projection (elements pushed toward the camera end up displaced
-   far more than the raw pixel value suggests). Doing the lean as `left`
-   sidesteps that entirely and keeps the offset exactly what it says.
+   There is no rotation drum here anymore. The spine path is what governs
+   everything: "current" decomposes into segIndex (which transition we're
+   in — see render.js buildSpine) and frac (progress through it, 0..1).
+   Exactly two cards are ever visible — the one we're leaving (fromIdx)
+   and the one we're arriving at (toIdx) — cross-fading as frac moves,
+   each rising into place from below and exiting upward as it goes,
+   mirroring the same "line traces / feels like it's scrolling up" motion
+   the curve itself has (spineCurve.setProgress gets the same "current"
+   every frame). Scrolling back up runs the exact same motion in reverse.
 
-   The spine curve itself is driven the same way: every frame,
-   spineCurve.setProgress(current) (see render.js) shows exactly one arc —
-   the one for whichever transition "current" is inside — and traces or
-   un-traces it in lockstep with scroll direction.
+   Each card's LEFT/RIGHT position is fixed per-card (data-lean, set by
+   render.js from the curve's own shape) and applied via the element's
+   `left` — a plain layout property — rather than a transform, so there's
+   no perspective/rotation math left to interact with it at all.
    ----------------------------------------------------------------------- */
 window.SpineEngine = (function () {
   function create(opts) {
@@ -41,35 +31,42 @@ window.SpineEngine = (function () {
     } = opts;
 
     const N = cards.length;
-    const SEGMENT = 52; // degrees between adjacent slots on the drum
     const leans = cards.map((c) => parseFloat(c.dataset.lean || "0") || 0); // -1, 0, or 1 per card
     let target = 0;
     let current = 0;
-    let radius = 620;
     let raf = null;
 
-    function computeRadius() {
+    function computeLean() {
       const w = window.innerWidth;
-      radius = Math.max(300, Math.min(680, w * 0.34));
 
-      // Mirrors --card-w: min(500px, 78vw) in main.css. maxLean is a
-      // provable bound: centreX = 50% ± leanPx, and leanPx never exceeds
-      // half the viewport minus half the card minus a margin, so the
-      // card's far edge can never pass the viewport edge on either side —
-      // this is what actually fixes the overflow (see comment above on
-      // why the old translateX-based approach couldn't guarantee that).
+      // Mirrors --card-w: min(500px, 78vw) in main.css.
       const cardW = Math.min(500, w * 0.78);
       const cardHalf = cardW / 2;
-      const margin = 24;
-      const maxLean = Math.max(0, w / 2 - cardHalf - margin);
-      const desiredLean = Math.min(200, w * 0.15);
-      const leanPx = Math.min(desiredLean, maxLean);
+      const clearance = 28; // gap between the card's INNER edge and centre
+      const edgeMargin = 24; // gap between the card's OUTER edge and the viewport edge
+
+      let leanPx = 0;
+      if (w >= 1120) {
+        // Below this width there isn't room for a 500px-capped card to
+        // clear the centreline with a real margin — see the main.css
+        // comment on .spine-line-wrap for the matching breakpoint.
+        const minLean = cardHalf + clearance; // guarantees the near edge clears centre
+        const maxLean = w / 2 - cardHalf - edgeMargin; // guarantees the far edge stays on screen
+        if (maxLean >= minLean) {
+          const desired = minLean + 80; // a bit of breathing room past the minimum
+          leanPx = Math.max(minLean, Math.min(maxLean, desired));
+        }
+        // if maxLean < minLean, the viewport's too narrow for a card this
+        // wide to clear centre without going off-screen — leanPx stays 0
+        // and the card centres instead (curve is CSS-hidden at this width
+        // regardless — see main.css).
+      }
 
       cards.forEach((card, i) => {
         card.style.left = "calc(50% + " + (leans[i] * leanPx).toFixed(1) + "px)";
       });
     }
-    computeRadius();
+    computeLean();
 
     function clamp(v) {
       return Math.max(0, Math.min(N - 1, v));
@@ -129,35 +126,51 @@ window.SpineEngine = (function () {
     stage.addEventListener("touchmove", onTouchMove, { passive: false });
     stage.addEventListener("touchend", onTouchEnd, { passive: true });
     window.addEventListener("keydown", onKey);
-    window.addEventListener("resize", computeRadius);
+    window.addEventListener("resize", computeLean);
 
     // ---- render loop ----
     let lastActive = -1;
+    const RISE = 36; // px a card travels in/out as it cross-fades
 
     function frame() {
       current += (target - current) * 0.09;
       if (Math.abs(target - current) < 0.0006) current = target;
 
+      const segIndex = N > 1 ? Math.max(0, Math.min(N - 2, Math.floor(current))) : 0;
+      const frac = N > 1 ? Math.max(0, Math.min(1, current - segIndex)) : 0;
+      const fromIdx = segIndex;
+      const toIdx = N > 1 ? Math.min(N - 1, segIndex + 1) : 0;
+
       for (let i = 0; i < N; i++) {
         const card = cards[i];
-        const rel = (i - current) * SEGMENT; // degrees
-        const rad = (rel * Math.PI) / 180;
-        const facing = Math.cos(rad); // 1 = dead centre, -1 = directly behind
-        const absRel = Math.abs(rel);
-        const opacity = Math.max(0, Math.min(1, 1 - absRel / 96));
-        const scale = 0.8 + 0.2 * Math.max(0, facing);
-        const blur = Math.min(11, absRel / 8.5);
-        const bright = 0.5 + 0.5 * Math.max(0, facing);
-        const bob = Math.sin(rad) * 16;
+        let opacity = 0;
+        let rise = RISE;
+        let z = 1000;
 
-        card.style.transform =
-          "translate(-50%,-50%) rotateY(" + rel.toFixed(2) + "deg) " +
-          "translateZ(" + radius + "px) translateY(" + bob.toFixed(1) + "px) " +
-          "scale(" + scale.toFixed(3) + ")";
-        card.style.opacity = opacity.toFixed(3);
-        card.style.filter = "blur(" + blur.toFixed(2) + "px) brightness(" + bright.toFixed(2) + ")";
-        card.style.zIndex = String(Math.round(1000 + facing * 100));
-        card.style.pointerEvents = absRel < SEGMENT * 0.5 ? "auto" : "none";
+        if (i === fromIdx && i === toIdx) {
+          opacity = 1;
+          rise = 0;
+          z = 1005;
+        } else if (i === fromIdx) {
+          opacity = 1 - frac;
+          rise = -frac * RISE; // exits upward
+          z = 1000;
+        } else if (i === toIdx) {
+          opacity = frac;
+          rise = (1 - frac) * RISE; // arrives from below
+          z = 1010;
+        }
+
+        if (opacity > 0.001) {
+          const scale = 0.97 + 0.03 * opacity;
+          card.style.transform = "translate(-50%,-50%) translateY(" + rise.toFixed(1) + "px) scale(" + scale.toFixed(3) + ")";
+          card.style.opacity = opacity.toFixed(3);
+          card.style.zIndex = String(z);
+          card.style.pointerEvents = opacity > 0.5 ? "auto" : "none";
+        } else {
+          card.style.opacity = "0";
+          card.style.pointerEvents = "none";
+        }
       }
 
       const activeIndex = Math.round(current);
@@ -199,7 +212,7 @@ window.SpineEngine = (function () {
         stage.removeEventListener("touchmove", onTouchMove);
         stage.removeEventListener("touchend", onTouchEnd);
         window.removeEventListener("keydown", onKey);
-        window.removeEventListener("resize", computeRadius);
+        window.removeEventListener("resize", computeLean);
       },
     };
   }

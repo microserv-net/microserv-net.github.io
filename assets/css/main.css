@@ -253,15 +253,13 @@ nav#primary-nav::before{
 .hamburger.open span:nth-child(3){ top:18px; transform:rotate(-45deg); }
 
 /* ==========================================================================
-   2. SPINE STAGE — the 3D scroll-hijacked carousel
+   2. SPINE STAGE — one card cross-fades to the next, driven by the curve
    ========================================================================== */
 #spine-stage{
   position:fixed; inset:0;
-  perspective:1500px;
-  perspective-origin:50% 50%;
 }
 body.no-hijack #spine-stage{
-  position:relative; inset:auto; perspective:none; min-height:100vh;
+  position:relative; inset:auto; min-height:100vh;
 }
 
 .spine-line-wrap{
@@ -280,12 +278,18 @@ body.no-hijack #spine-stage{
   fill:var(--accent); stroke:var(--void); stroke-width:2;
   opacity:0; transition:opacity .3s ease;
 }
-/* The curve now stays close to the centreline (it bows at most ~90px
-   either way — see AMPLITUDE in render.js), and each card sits opposite
-   whichever way the curve bows near it. The tag sits on the SAME side as
-   the curve's bow, a fixed distance from centre that comfortably clears
-   the widest possible bow — so tag and card always land on opposite
-   sides of the spine, symmetric around it. */
+/* Below 1120px there isn't room for a card to clear the centreline with a
+   comfortable margin (see computeLean() in spine-engine.js, which also
+   stops offsetting cards at this width) — so the curve just isn't shown;
+   showing a curve nothing sits opposite to would be worse than no curve. */
+@media (max-width: 1119px){
+  .spine-line-wrap{ display:none; }
+}
+
+/* Each card sits opposite whichever way its nearby arc bows. The tag
+   sits on the SAME side as the curve's bow, a fixed distance from centre
+   that comfortably clears the widest possible bow — so tag and card
+   always land on opposite sides of the spine, symmetric around it. */
 .vertebra-tag{
   position:fixed; left:calc(50% - 190px); z-index:6;
   transform:translate(-100%, -50%);
@@ -324,22 +328,19 @@ body.no-hijack #spine-stage{
   transform-origin:right;
 }
 
-@media (max-width: 900px){
+@media (max-width: 1119px){
   .vertebra-tag{ display:none; }
 }
 
 #spine-carousel{
   position:absolute; inset:0;
-  transform-style:preserve-3d;
 }
 
 .card{
   position:absolute;
   top:50%; left:50%;
   width:var(--card-w);
-  transform-style:preserve-3d;
-  will-change:transform, opacity, filter;
-  backface-visibility:hidden;
+  will-change:transform, opacity;
 }
 .card-face{
   background:var(--bg-elevated);

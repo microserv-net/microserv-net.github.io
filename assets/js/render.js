@@ -279,17 +279,26 @@ window.SpineRender = (function () {
       const segIndex = Math.max(0, Math.min(segCount - 1, Math.floor(current)));
       const frac = Math.max(0, Math.min(1, current - segIndex));
 
+      // The same "everything drifts upward as you go" motion the cards
+      // have (see spine-engine.js) — as the arc traces in, it also rises
+      // slightly, so the line reads as passing by rather than sitting
+      // static while only its stroke changes.
+      const drift = (-frac * 22).toFixed(1) + "px";
+
       segPaths.forEach((p, i) => {
         if (i === segIndex) {
           p.style.opacity = "1";
           const len = segLens[i] || 0;
           p.style.strokeDashoffset = String(len * (1 - frac));
+          p.style.transform = "translateY(" + drift + ")";
         } else {
           p.style.opacity = "0";
         }
       });
       nodeTop.style.opacity = "1";
       nodeBot.style.opacity = "1";
+      nodeTop.style.transform = "translateY(" + drift + ")";
+      nodeBot.style.transform = "translateY(" + drift + ")";
     }
 
     setProgress(0);
