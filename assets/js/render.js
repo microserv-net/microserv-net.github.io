@@ -199,11 +199,12 @@ window.SpineRender = (function () {
     const segCount = Math.max(0, N - 1);
     const startPhase = Math.random() < 0.5 ? 1 : -1; // which side vertebra 0 sits on, per load
 
-    // Cards alternate sides, plain and simple — the curve below is built
-    // FROM these same positions, so it always swings toward wherever the
-    // outgoing/incoming card actually is.
+    // Cards alternate sides. Which side card i sits on is derived from
+    // the SAME rule the curve uses below (see `side` in layout()), so the
+    // bulge nearest a card always points into that card — they can't
+    // drift out of agreement.
     slots.forEach((slot, i) => {
-      slot.lean = (i % 2 === 0 ? 1 : -1) * startPhase;
+      slot.lean = (i % 2 === 0 ? -1 : 1) * startPhase;
     });
 
     // ONE path for the entire journey, not N separate ones that swap.
@@ -271,18 +272,26 @@ window.SpineRender = (function () {
       const controlOffset = peakOffset * 2;
 
       let d = `M ${cx} ${yTop}`;
-      for (let i = 0; i < segCount; i++) {
-        const segTop = yTop + i * bandHeight;
+      for (let k = 0; k < segCount; k++) {
+        const segTop = yTop + k * bandHeight;
         const segBot = segTop + bandHeight;
         const segMid = (segTop + segBot) / 2;
-        // where the curve reaches its closest approach to each card,
-        // vertically — inside the card's own vertical span
-        const upperY = segTop + (segMid - segTop) * 0.6;
-        const lowerY = segMid + (segBot - segMid) * 0.4;
 
-        const xFrom = cx + (slots[i].lean || 0) * controlOffset;
-        const xTo = cx + (slots[i + 1].lean || 0) * controlOffset;
-        d += ` Q ${xFrom} ${upperY} ${cx} ${segMid} Q ${xTo} ${lowerY} ${cx} ${segBot}`;
+        // ONE bulge per transition, alternating strictly by band parity.
+        //
+        // The previous version emitted two bulges per transition (one
+        // toward the outgoing card, one toward the incoming card), which
+        // made the sequence R L L R R L… — every boundary repeated a
+        // side, and each repeat rendered as a hard cusp pointing back at
+        // the centreline. Keying the side purely off band parity gives a
+        // clean R L R L… with no repeats, so consecutive bulges always
+        // oppose and the joins stay smooth.
+        //
+        // The bulge peaks at segMid, which is the vertical centre of the
+        // visible band — exactly where the active card is centred — so
+        // the peak drives into that card rather than past it.
+        const side = (k % 2 === 0 ? 1 : -1) * startPhase;
+        d += ` Q ${cx + side * controlOffset} ${segMid} ${cx} ${segBot}`;
       }
       trace.setAttribute("d", d);
       traceLen = trace.getTotalLength();
