@@ -313,23 +313,32 @@ window.SpineRender = (function () {
       const frac = Math.max(0, Math.min(1, current - segIndex));
       const overallFrac = Math.max(0, Math.min(1, current / segCount));
 
-      const drift = (-current * bandHeight).toFixed(1) + "px";
+      // Drift deliberately lags the trace by exactly one band.
+      //
+      // The naive -current*bandHeight cancels the tip's downward growth
+      // perfectly, pinning the leading tip at the band's top edge forever
+      // and pushing everything already drawn up off-screen — which is why
+      // only a sliver rendered at the top. Holding drift at 0 for the
+      // first band lets the tip crawl down through the whole visible band
+      // (the "ignition dot then crawl" opening); past that it moves up at
+      // the growth rate, so the tip sits at the band's bottom and the
+      // most recent band-height of curve always fills the visible area,
+      // flowing continuously upward with no reset.
+      const drift = (-Math.max(0, current - 1) * bandHeight).toFixed(1) + "px";
 
       trace.style.strokeDashoffset = String(traceLen * (1 - overallFrac));
       trace.style.transform = "translateY(" + drift + ")";
 
-      // nodeTop is the "ignition" dot — where the current transition
-      // starts, and the only thing visible before any scrolling happens
-      // (frac 0). nodeBot only appears as the trace actually arrives
-      // there, fading in with frac rather than sitting there the whole
-      // time. Both track the currently active segment's own (undrifted)
-      // top/bottom.
-      const segTop = baseYTop + segIndex * bandHeight;
-      const segBot = segTop + bandHeight;
-      nodeTop.setAttribute("cy", String(segTop));
-      nodeBot.setAttribute("cy", String(segBot));
+      // nodeTop is the "ignition" dot at the very start of the path — the
+      // only thing visible before any scrolling (nothing traced yet). It
+      // rides up out of the band naturally once the line is underway.
+      // nodeBot rides the leading tip of the trace, so there's always a
+      // bright head on the crawling line.
+      const tipY = baseYTop + current * bandHeight;
+      nodeTop.setAttribute("cy", String(baseYTop));
+      nodeBot.setAttribute("cy", String(tipY));
       nodeTop.style.opacity = "1";
-      nodeBot.style.opacity = String(frac);
+      nodeBot.style.opacity = current > 0.02 ? "1" : "0";
       nodeTop.style.transform = "translateY(" + drift + ")";
       nodeBot.style.transform = "translateY(" + drift + ")";
     }
