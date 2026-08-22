@@ -22,7 +22,7 @@
     },
     "upi": {
       "vpa": "7903202747@slc",
-      "payeeName": "Deepster"
+      "payeeName": "Soumyo Deep Gupta"
     },
     "suggestedAmountsUSD": [5, 15, 50],
     "suggestedAmountsINR": [200, 500, 1500]
@@ -37,6 +37,8 @@
 
   "social": [
     { "label": "GitHub", "url": "https://github.com/microserv-net" },
-    { "label": "Email", "url": "mailto:d33p0st@gmail.com" }
+    { "label": "Email", "url": "mailto:d33p0st@gmail.com" },
+    { "label": "Instagram", "url": "https://www.instagram.com/tshoqr" },
+    { "label": "Linkedin", "url": "https://www.linkedin.com/in/soumyodeepgupta" }
   ]
 }

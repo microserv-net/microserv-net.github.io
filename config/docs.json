@@ -15,7 +15,7 @@
       "slug": "_example-external-doc",
       "title": "Example: doc pulled from another repo (replace or delete me)",
       "description": "Shows that 'source' can point anywhere, including outside this repository.",
-      "source": "https://raw.githubusercontent.com/<owner>/<other-repo>/main/README.md",
+      "source": "https://raw.githubusercontent.com/microserv-net/thermite-web/main/README.md",
       "project": "",
       "category": "Example"
     }

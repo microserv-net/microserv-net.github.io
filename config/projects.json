@@ -1,5 +1,5 @@
 {
-  "_comment": "Add/remove projects freely — the site re-renders from this file on every load, nothing else needs touching. Set 'featured': true on the ones that should get a large vertebra of their own; the rest render together in the compact 'T-series' index card. Order in this array is the order they rotate past on the spine.",
+  "_comment": "Add/remove projects freely — the site re-renders from this file on every load, nothing else needs touching. A project gets its own full-size section only if its 'id' is listed in the top-level 'featured' array below; every project (featured or not) also appears in the compact 'Everything, indexed' section. Order of the 'featured' array is the order those sections appear. See Configurations.md for full field reference.",
 
   "featured": ["thermite-web"],
 
@@ -11,34 +11,30 @@
       "description": "Fe2O3 + 2Al -> Al2O3 + 2Fe + heat. Compiles Rust on GitHub's own hosted runners, in your account, on your quota, and hands you a binary for any of eleven targets -- optionally sealed end to end with a key only you hold. The site itself is a static page with no backend of its own.",
       "url": "https://github.com/microserv-net/thermite-web",
       "demoUrl": "https://microservices.net.in/thermite-web/",
-      "tags": ["rust", "github-actions", "no-backend", "wasm"],
+      "tags": ["rust", "github-actions", "no-backend", "cross-compilation", "cloud-compiler"],
       "status": "active",
       "sponsorable": true,
       "docs": "thermite-architecture"
-    },
-
-    {
-      "id": "_example-project",
-      "name": "Example Project (replace or delete me)",
-      "tagline": "One line describing what it does and why it exists.",
-      "description": "A longer description shown on the project's own vertebra when it is marked featured, or in the compact index otherwise. Plain text or simple sentences are safest -- this is rendered as-is, no markdown parsing here (use the docs system below for long-form writeups).",
-      "url": "https://github.com/microserv-net/example-project",
-      "demoUrl": "",
-      "tags": ["example", "delete-me"],
-      "status": "wip",
-      "sponsorable": true,
-      "docs": ""
     }
   ],
 
   "patents": [
     {
-      "id": "_example-patent",
-      "title": "Example Patent Title (replace or delete me)",
-      "number": "US 00/000,000",
-      "status": "filed",
-      "filedDate": "2026-01-01",
-      "abstract": "One or two sentences on what the patent covers. Shown as-is on the L-series (lumbar) vertebra.",
+      "id": "nyedarch",
+      "title": "System and Method for Preventing Data Leakage — Data Leak Protection Technology",
+      "number": "IN 202541087012",
+      "status": "published (pending examination)",
+      "filedDate": "2025-09-12",
+      "abstract": "Designed a self-protecting data leak prevention architecture that secures files using memory-hard and geo-bound encryption and environment-aware verification based on trusted system metadata. The system continues protecting data even after it leaves the owner’s environment, providing tamper detection, secure erasure, telemetry notifications, and configurable trust models for individual and enterprise deployments.",
+      "url": ""
+    },
+    {
+      "id": "continuum-rb",
+      "title": "System and Method for Restricting Malware-Based Attack — Anti-Ransomware Blockchain Architecture",
+      "number": "IN 202541076811",
+      "status": "published (pending examination)",
+      "filedDate": "2025-08-12",
+      "abstract": "Designed an always-on, in-memory blockchain architecture to protect user data against crypto-ransomware. The system maintains a tamper-evident ledger of file operations using memory-hard proof-of-work validation, enabling rapid detection of unauthorized modifications while remaining resilient against attacks targeting conventional disk-based storage while enabling efficient recovery of protected data.",
       "url": ""
     }
   ]
